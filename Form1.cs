@@ -12,6 +12,9 @@ using Polly.Retry;
 
 namespace IotManager
 {
+    /// <summary>
+    /// IoTデバイスとIoT Hubの管理を行うフォーム
+    /// </summary>
     public partial class Form1 : Form
     {
         private static DeviceClient deviceClient;
@@ -24,6 +27,9 @@ namespace IotManager
         private string eventHubName;
         private EventProcessorClient processorClient;
 
+        /// <summary>
+        /// コンストラクタ
+        /// </summary>
         public Form1()
         {
             InitializeComponent();
@@ -34,8 +40,11 @@ namespace IotManager
                 .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
                 .Build();
 
-             iotHubConnectionString = Utility.Configuration["IoTHub:ConnectionString"];
-            txtConnectionString.Text = iotHubConnectionString;
+            iotHubConnectionString = Utility.Configuration["IoTHub:ConnectionString"];
+            txtIotHubConnectionString.Text = iotHubConnectionString;
+
+            eventHubConnectionString = Utility.Configuration["EventHub:ConnectionString"];
+            txtEventHubConnectionString.Text = eventHubConnectionString;
 
             retryPolicy = Policy
                 .Handle<Exception>()
@@ -47,11 +56,14 @@ namespace IotManager
             registryManager = RegistryManager.CreateFromConnectionString(iotHubConnectionString);
         }
 
+        /// <summary>
+        /// イベントハンドラでメッセージを処理
+        /// </summary>
+        /// <param name="eventArgs">イベント引数</param>
         private async Task ProcessEventHandler(ProcessEventArgs eventArgs)
         {
             try
             {
-                // メッセージの内容を取得
                 var message = Encoding.UTF8.GetString(eventArgs.Data.Body.ToArray());
                 var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
 
@@ -65,12 +77,19 @@ namespace IotManager
             }
         }
 
+        /// <summary>
+        /// エラーハンドラでエラーを処理
+        /// </summary>
+        /// <param name="eventArgs">イベント引数</param>
         private Task ProcessErrorHandler(ProcessErrorEventArgs eventArgs)
         {
             MessageBox.Show($"Error: {eventArgs.Exception.Message}");
             return Task.CompletedTask;
         }
 
+        /// <summary>
+        /// デバイスIDをロード
+        /// </summary>
         private async Task LoadDeviceIds()
         {
             try
@@ -94,6 +113,9 @@ namespace IotManager
             }
         }
 
+        /// <summary>
+        /// IoT Hubを開くボタンのクリックイベント
+        /// </summary>
         private async void btnHubOpen_Click(object sender, EventArgs e)
         {
             if (isIotHubOpen)
@@ -109,25 +131,20 @@ namespace IotManager
             {
                 if (processorClient is null)
                 {
-                    eventHubConnectionString = Utility.Configuration["EventHub:ConnectionString"];
-                    eventHubName = Utility.Configuration["EventHub:EvebtHubName"];
+                    eventHubConnectionString = txtEventHubConnectionString.Text;
+                    eventHubName = Utility.GetEntityPathFromConnectionString(eventHubConnectionString);
 
-                    // Blobコンテナのクライアントを作成
                     var blobStorageConnectionString = Utility.Configuration["EventHub:StorageConnectionString"];
                     var blobContainerName = Utility.Configuration["EventHub:StorageContainerName"];
                     var blobContainerClient = new BlobContainerClient(blobStorageConnectionString, blobContainerName);
-                    // Blobコンテナが存在しない場合は作成
                     blobContainerClient.CreateIfNotExists();
 
-                    // EventProcessorClientを初期化
                     processorClient = new EventProcessorClient(blobContainerClient, EventHubConsumerClient.DefaultConsumerGroupName, eventHubConnectionString, eventHubName);
 
-                    // イベントハンドラを設定
                     processorClient.ProcessEventAsync += ProcessEventHandler;
                     processorClient.ProcessErrorAsync += ProcessErrorHandler;
                 }
 
-                // メッセージ受信の開始
                 await processorClient.StartProcessingAsync();
             }
             catch (Exception ex)
@@ -140,6 +157,9 @@ namespace IotManager
             btnHubSend.Enabled = true;
         }
 
+        /// <summary>
+        /// IoT Hubにメッセージを送信するボタンのクリックイベント
+        /// </summary>
         private async void btnHubSend_Click(object sender, EventArgs e)
         {
             var deviceId = cmbDeviceId.SelectedItem.ToString();
@@ -147,6 +167,9 @@ namespace IotManager
             await SendCloudToDeviceMessageAsync(deviceId, message);
         }
 
+        /// <summary>
+        /// クラウドからデバイスにメッセージを送信
+        /// </summary>
         private async Task SendCloudToDeviceMessageAsync(string deviceId, string message)
         {
             var serviceClient = ServiceClient.CreateFromConnectionString(iotHubConnectionString);
@@ -155,11 +178,17 @@ namespace IotManager
             MessageBox.Show($"メッセージがデバイス {deviceId} に送信されました: {message}");
         }
 
+        /// <summary>
+        /// デバイスを開くボタンのクリックイベント
+        /// </summary>
         private async void btnDevicerOpen_Click(object sender, EventArgs e)
         {
             await DeviceOpen();
         }
 
+        /// <summary>
+        /// デバイスを開く
+        /// </summary>
         private async Task DeviceOpen()
         {
             var deviceId = cmbDeviceId.SelectedItem.ToString();
@@ -196,15 +225,11 @@ namespace IotManager
             btnDevicerOpen.Text = "Close";
             btnDeviceSend.Enabled = true;
             cmbDeviceId.Enabled = false;
-
-            //await retryPolicy.ExecuteAsync(async () =>
-            //{
-            //    var method = args.Length > 1 ? args[1] : configuration["IoTHub:DirectMethod"];
-            //    await deviceClient.SetMethodHandlerAsync(method, DirectMethodCallback, null);
-            //    Console.WriteLine($"ダイレクトメソッド待機:{method}");
-            //});
         }
 
+        /// <summary>
+        /// デバイスにメッセージを送信するボタンのクリックイベント
+        /// </summary>
         private async void btnDeviceSend_Click(object sender, EventArgs e)
         {
             await retryPolicy.ExecuteAsync(async () =>
@@ -213,13 +238,15 @@ namespace IotManager
             });
         }
 
+        /// <summary>
+        /// メッセージを受信した際の処理
+        /// </summary>
         private async Task OnMessageReceived(Microsoft.Azure.Devices.Client.Message receivedMessage, object userContext)
         {
             var messageBytes = receivedMessage.GetBytes();
             var messageText = Encoding.UTF8.GetString(messageBytes);
             var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
 
-            // UIスレッドでの操作
             if (InvokeRequired)
             {
                 Invoke(new Action(() => rtxtDeviceReceive.AppendText($"[{timestamp}] {messageText}{Environment.NewLine}")));
@@ -229,10 +256,12 @@ namespace IotManager
                 rtxtDeviceReceive.AppendText($"[{timestamp}] {messageText}{Environment.NewLine}");
             }
 
-            // メッセージを完了としてマーク
             await deviceClient.CompleteAsync(receivedMessage);
         }
 
+        /// <summary>
+        /// メッセージを送信
+        /// </summary>
         private static async Task SendMessageAsync(string message)
         {
             var jstTime = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTime.UtcNow, "Tokyo Standard Time");
@@ -243,7 +272,6 @@ namespace IotManager
                 ContentType = "application/json",
                 ContentEncoding = "utf-8"
             };
-            // ユーザー定義プロパティを追加
             messageToSend.Properties.Add("insertJstTime", jstTime.ToString("o"));
             messageToSend.MessageId = Guid.NewGuid().ToString();
 
@@ -264,6 +292,9 @@ namespace IotManager
             }
         }
 
+        /// <summary>
+        /// フォームロード時の処理
+        /// </summary>
         private async void Form1_Load(object sender, EventArgs e)
         {
             await LoadDeviceIds();

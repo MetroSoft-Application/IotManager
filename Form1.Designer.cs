@@ -42,9 +42,11 @@
             rtxtDeviceReceive = new RichTextBox();
             groupBox2 = new GroupBox();
             splitContainer4 = new SplitContainer();
+            txtEventHubConnectionString = new TextBox();
+            label3 = new Label();
             btnHubOpen = new Button();
             btnHubSend = new Button();
-            txtConnectionString = new TextBox();
+            txtIotHubConnectionString = new TextBox();
             label2 = new Label();
             splitContainer5 = new SplitContainer();
             groupBox5 = new GroupBox();
@@ -247,9 +249,11 @@
             // 
             // splitContainer4.Panel1
             // 
+            splitContainer4.Panel1.Controls.Add(txtEventHubConnectionString);
+            splitContainer4.Panel1.Controls.Add(label3);
             splitContainer4.Panel1.Controls.Add(btnHubOpen);
             splitContainer4.Panel1.Controls.Add(btnHubSend);
-            splitContainer4.Panel1.Controls.Add(txtConnectionString);
+            splitContainer4.Panel1.Controls.Add(txtIotHubConnectionString);
             splitContainer4.Panel1.Controls.Add(label2);
             // 
             // splitContainer4.Panel2
@@ -258,6 +262,23 @@
             splitContainer4.Size = new Size(565, 567);
             splitContainer4.SplitterDistance = 52;
             splitContainer4.TabIndex = 0;
+            // 
+            // txtEventHubConnectionString
+            // 
+            txtEventHubConnectionString.Location = new Point(164, 28);
+            txtEventHubConnectionString.Name = "txtEventHubConnectionString";
+            txtEventHubConnectionString.Size = new Size(221, 23);
+            txtEventHubConnectionString.TabIndex = 6;
+            txtEventHubConnectionString.UseSystemPasswordChar = true;
+            // 
+            // label3
+            // 
+            label3.AutoSize = true;
+            label3.Location = new Point(5, 29);
+            label3.Name = "label3";
+            label3.Size = new Size(151, 15);
+            label3.TabIndex = 5;
+            label3.Text = "EventHubConnectionString";
             // 
             // btnHubOpen
             // 
@@ -282,22 +303,22 @@
             btnHubSend.UseVisualStyleBackColor = true;
             btnHubSend.Click += btnHubSend_Click;
             // 
-            // txtConnectionString
+            // txtIotHubConnectionString
             // 
-            txtConnectionString.Location = new Point(110, 1);
-            txtConnectionString.Name = "txtConnectionString";
-            txtConnectionString.Size = new Size(221, 23);
-            txtConnectionString.TabIndex = 1;
-            txtConnectionString.UseSystemPasswordChar = true;
+            txtIotHubConnectionString.Location = new Point(164, 2);
+            txtIotHubConnectionString.Name = "txtIotHubConnectionString";
+            txtIotHubConnectionString.Size = new Size(221, 23);
+            txtIotHubConnectionString.TabIndex = 1;
+            txtIotHubConnectionString.UseSystemPasswordChar = true;
             // 
             // label2
             // 
             label2.AutoSize = true;
             label2.Location = new Point(5, 2);
             label2.Name = "label2";
-            label2.Size = new Size(99, 15);
+            label2.Size = new Size(136, 15);
             label2.TabIndex = 0;
-            label2.Text = "ConnectionString";
+            label2.Text = "IotHubConnectionString";
             // 
             // splitContainer5
             // 
@@ -405,7 +426,7 @@
         private GroupBox groupBox2;
         private SplitContainer splitContainer2;
         private Button btnDevicerOpen;
-        private TextBox txtConnectionString;
+        private TextBox txtIotHubConnectionString;
         private Label label1;
         private SplitContainer splitContainer3;
         private GroupBox groupBox3;
@@ -423,5 +444,7 @@
         private Button btnHubSend;
         private Button btnHubOpen;
         private Button btnDeviceSend;
+        private TextBox txtEventHubConnectionString;
+        private Label label3;
     }
 }
