@@ -1,18 +1,14 @@
 using System.Text;
 using System.Text.Json;
+using Azure.Messaging.EventHubs;
+using Azure.Messaging.EventHubs.Consumer;
+using Azure.Messaging.EventHubs.Processor;
+using Azure.Storage.Blobs;
 using Microsoft.Azure.Devices;
 using Microsoft.Azure.Devices.Client;
 using Microsoft.Extensions.Configuration;
 using Polly;
 using Polly.Retry;
-using System;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
-using Azure.Messaging.EventHubs;
-using Azure.Messaging.EventHubs.Consumer;
-using Azure.Storage.Blobs;
-using Azure.Messaging.EventHubs.Processor;
 
 namespace IotManager
 {
@@ -23,9 +19,9 @@ namespace IotManager
         private AsyncRetryPolicy retryPolicy;
         private RegistryManager registryManager;
         private bool isDeviceOpen = false;
+        private bool isIotHubOpen = false;
         private string eventHubConnectionString;
         private string eventHubName;
-        private static EventHubConsumerClient consumerClient;
         private EventProcessorClient processorClient;
 
         public Form1()
@@ -38,7 +34,7 @@ namespace IotManager
                 .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
                 .Build();
 
-            iotHubConnectionString = Utility.Configuration["IoTHub:ConnectionString"];
+             iotHubConnectionString = Utility.Configuration["IoTHub:ConnectionString"];
             txtConnectionString.Text = iotHubConnectionString;
 
             retryPolicy = Policy
@@ -59,10 +55,8 @@ namespace IotManager
                 var message = Encoding.UTF8.GetString(eventArgs.Data.Body.ToArray());
                 var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
 
-                // UIスレッドでListBoxにメッセージを追加
                 Invoke(new Action(() => rtxtHubReceive.AppendText($"[{timestamp}] {message}{Environment.NewLine}")));
 
-                // チェックポイントの更新
                 await eventArgs.UpdateCheckpointAsync();
             }
             catch (Exception ex)
@@ -73,7 +67,6 @@ namespace IotManager
 
         private Task ProcessErrorHandler(ProcessErrorEventArgs eventArgs)
         {
-            // エラーハンドリング
             MessageBox.Show($"Error: {eventArgs.Exception.Message}");
             return Task.CompletedTask;
         }
@@ -103,56 +96,48 @@ namespace IotManager
 
         private async void btnHubOpen_Click(object sender, EventArgs e)
         {
-            if (processorClient != null)
+            if (isIotHubOpen)
             {
+                await processorClient.StopProcessingAsync();
+                btnHubOpen.Text = "Open";
+                btnHubSend.Enabled = false;
+                isIotHubOpen = false;
                 return;
             }
 
             try
             {
-                eventHubConnectionString = Utility.Configuration["EventHub:ConnectionString"];
-                eventHubName = Utility.Configuration["EventHub:EvebtHubName"];
+                if (processorClient is null)
+                {
+                    eventHubConnectionString = Utility.Configuration["EventHub:ConnectionString"];
+                    eventHubName = Utility.Configuration["EventHub:EvebtHubName"];
 
-                // Blobコンテナのクライアントを作成
-                var blobStorageConnectionString = Utility.Configuration["EventHub:StorageConnectionString"];
-                var blobContainerName = Utility.Configuration["EventHub:StorageContainerName"];
-                var blobContainerClient = new BlobContainerClient(blobStorageConnectionString, blobContainerName);
-                // Blobコンテナが存在しない場合は作成
-                blobContainerClient.CreateIfNotExists();
+                    // Blobコンテナのクライアントを作成
+                    var blobStorageConnectionString = Utility.Configuration["EventHub:StorageConnectionString"];
+                    var blobContainerName = Utility.Configuration["EventHub:StorageContainerName"];
+                    var blobContainerClient = new BlobContainerClient(blobStorageConnectionString, blobContainerName);
+                    // Blobコンテナが存在しない場合は作成
+                    blobContainerClient.CreateIfNotExists();
 
-                // EventProcessorClientを初期化
-                processorClient = new EventProcessorClient(blobContainerClient, EventHubConsumerClient.DefaultConsumerGroupName, eventHubConnectionString, eventHubName);
+                    // EventProcessorClientを初期化
+                    processorClient = new EventProcessorClient(blobContainerClient, EventHubConsumerClient.DefaultConsumerGroupName, eventHubConnectionString, eventHubName);
 
-                // イベントハンドラを設定
-                processorClient.ProcessEventAsync += ProcessEventHandler;
-                processorClient.ProcessErrorAsync += ProcessErrorHandler;
+                    // イベントハンドラを設定
+                    processorClient.ProcessEventAsync += ProcessEventHandler;
+                    processorClient.ProcessErrorAsync += ProcessErrorHandler;
+                }
 
                 // メッセージ受信の開始
-                processorClient.StartProcessingAsync();
-
-                //consumerClient = new EventHubConsumerClient(EventHubConsumerClient.DefaultConsumerGroupName, eventHubConnectionString, eventHubName);
-
-
-                //// Blobコンテナのクライアントを作成
-                //var blobContainerClient = new BlobContainerClient(blobStorageConnectionString, blobContainerName);
-
-                //// Blobコンテナが存在しない場合は作成
-                //blobContainerClient.CreateIfNotExists();
-
-                //// EventProcessorClientを初期化
-                //processorClient = new EventProcessorClient(blobContainerClient, consumerGroup, eventHubConnectionString, eventHubName);
-
-                //// イベントハンドラを設定
-                //processorClient.ProcessEventAsync += ProcessEventHandler;
-                //processorClient.ProcessErrorAsync += ProcessErrorHandler;
-
-                //// メッセージ受信の開始
-                //processorClient.StartProcessingAsync();
+                await processorClient.StartProcessingAsync();
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Error initializing Event Processor: {ex.Message}");
             }
+
+            isIotHubOpen = true;
+            btnHubOpen.Text = "Close";
+            btnHubSend.Enabled = true;
         }
 
         private async void btnHubSend_Click(object sender, EventArgs e)
