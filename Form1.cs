@@ -19,6 +19,7 @@ namespace IotManager
         public Form1()
         {
             InitializeComponent();
+            AutoScaleMode = AutoScaleMode.Dpi;
 
             var configuration = new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory())
@@ -142,14 +143,16 @@ namespace IotManager
         {
             var messageBytes = receivedMessage.GetBytes();
             var messageText = Encoding.UTF8.GetString(messageBytes);
+            var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+
             // UIスレッドでの操作
             if (InvokeRequired)
             {
-                Invoke(new Action(() => .AppendText(messageText)));
+                Invoke(new Action(() => rtxtDeviceReceive.AppendText($"[{timestamp}] {messageText}{Environment.NewLine}")));
             }
             else
             {
-                rtxtDeviceReceive.AppendText(messageText);
+                rtxtDeviceReceive.AppendText($"[{timestamp}] {messageText}{Environment.NewLine}");
             }
 
             // メッセージを完了としてマーク
