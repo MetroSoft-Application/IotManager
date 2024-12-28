@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using System.Windows.Forms;
 using Azure.Messaging.EventHubs;
 using Azure.Messaging.EventHubs.Consumer;
 using Azure.Messaging.EventHubs.Processor;
@@ -26,6 +27,7 @@ namespace IotManager
         private string eventHubConnectionString;
         private string eventHubName;
         private EventProcessorClient processorClient;
+        private const int MAX_LINE = 30;
 
         /// <summary>
         /// コンストラクタ
@@ -67,7 +69,11 @@ namespace IotManager
                 var message = Encoding.UTF8.GetString(eventArgs.Data.Body.ToArray());
                 var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
 
-                Invoke(new Action(() => rtxtHubReceive.AppendText($"[{timestamp}] {message}{Environment.NewLine}")));
+                Invoke(new Action(() =>
+                {
+                    rtxtHubReceive.AppendText($"[{timestamp}] {message}{Environment.NewLine}");
+                    EnsureMaxLines(rtxtHubReceive, MAX_LINE);
+                }));
 
                 await eventArgs.UpdateCheckpointAsync();
             }
@@ -249,7 +255,11 @@ namespace IotManager
 
             if (InvokeRequired)
             {
-                Invoke(new Action(() => rtxtDeviceReceive.AppendText($"[{timestamp}] {messageText}{Environment.NewLine}")));
+                Invoke(new Action(() =>
+                {
+                    rtxtDeviceReceive.AppendText($"[{timestamp}] {messageText}{Environment.NewLine}");
+                    EnsureMaxLines(rtxtDeviceReceive, MAX_LINE);
+                }));
             }
             else
             {
@@ -298,6 +308,22 @@ namespace IotManager
         private async void Form1_Load(object sender, EventArgs e)
         {
             await LoadDeviceIds();
+        }
+
+        /// <summary>
+        /// RichTextBoxの行数を制限し、古い行を削除
+        /// </summary>
+        /// <param name="richTextBox">対象のRichTextBox</param>
+        /// <param name="MaxLines">最大行数</param>
+        private void EnsureMaxLines(RichTextBox richTextBox, int MaxLines)
+        {
+            if (richTextBox.Lines.Length > MaxLines)
+            {
+                var lines = richTextBox.Lines.Skip(richTextBox.Lines.Length - MaxLines).ToArray();
+                richTextBox.Lines = lines;
+                richTextBox.SelectionStart = richTextBox.Text.Length;
+            }
+            richTextBox.ScrollToCaret();
         }
     }
 }
