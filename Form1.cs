@@ -26,6 +26,7 @@ namespace IotManager
         private bool isIotHubOpen = false;
         private string eventHubConnectionString;
         private string eventHubName;
+        private string storageConnectionString;
         private EventProcessorClient processorClient;
         private const int MAX_LINE = 30;
 
@@ -47,6 +48,9 @@ namespace IotManager
 
             eventHubConnectionString = Utility.Configuration["EventHub:ConnectionString"];
             txtEventHubConnectionString.Text = eventHubConnectionString;
+
+            storageConnectionString = Utility.Configuration["EventHub:StorageConnectionString"];
+            txtStorageConnectionString.Text = storageConnectionString;
 
             retryPolicy = Policy
                 .Handle<Exception>()
@@ -140,9 +144,9 @@ namespace IotManager
                     eventHubConnectionString = txtEventHubConnectionString.Text;
                     eventHubName = Utility.GetEntityPathFromConnectionString(eventHubConnectionString);
 
-                    var blobStorageConnectionString = Utility.Configuration["EventHub:StorageConnectionString"];
-                    var blobContainerName = Utility.Configuration["EventHub:StorageContainerName"];
-                    var blobContainerClient = new BlobContainerClient(blobStorageConnectionString, blobContainerName);
+                    storageConnectionString= txtStorageConnectionString.Text;
+                    var blobContainerName = Utility.Configuration["EventHub:StorageContainerName"] ?? "eventhub-checkpoints";
+                    var blobContainerClient = new BlobContainerClient(storageConnectionString, blobContainerName);
                     blobContainerClient.CreateIfNotExists();
 
                     processorClient = new EventProcessorClient(blobContainerClient, EventHubConsumerClient.DefaultConsumerGroupName, eventHubConnectionString, eventHubName);

@@ -42,6 +42,8 @@
             rtxtDeviceReceive = new RichTextBox();
             groupBox2 = new GroupBox();
             splitContainer4 = new SplitContainer();
+            txtStorageConnectionString = new TextBox();
+            label4 = new Label();
             txtEventHubConnectionString = new TextBox();
             label3 = new Label();
             btnHubOpen = new Button();
@@ -127,7 +129,7 @@
             // 
             splitContainer2.Panel2.Controls.Add(splitContainer3);
             splitContainer2.Size = new Size(532, 567);
-            splitContainer2.SplitterDistance = 52;
+            splitContainer2.SplitterDistance = 77;
             splitContainer2.TabIndex = 0;
             // 
             // btnDeviceSend
@@ -184,8 +186,8 @@
             // splitContainer3.Panel2
             // 
             splitContainer3.Panel2.Controls.Add(groupBox4);
-            splitContainer3.Size = new Size(532, 511);
-            splitContainer3.SplitterDistance = 211;
+            splitContainer3.Size = new Size(532, 486);
+            splitContainer3.SplitterDistance = 199;
             splitContainer3.TabIndex = 1;
             // 
             // groupBox3
@@ -194,7 +196,7 @@
             groupBox3.Dock = DockStyle.Fill;
             groupBox3.Location = new Point(0, 0);
             groupBox3.Name = "groupBox3";
-            groupBox3.Size = new Size(532, 211);
+            groupBox3.Size = new Size(532, 199);
             groupBox3.TabIndex = 0;
             groupBox3.TabStop = false;
             groupBox3.Text = "DeviceSendMessage";
@@ -204,7 +206,7 @@
             rtxtDeviceSend.Dock = DockStyle.Fill;
             rtxtDeviceSend.Location = new Point(3, 19);
             rtxtDeviceSend.Name = "rtxtDeviceSend";
-            rtxtDeviceSend.Size = new Size(526, 189);
+            rtxtDeviceSend.Size = new Size(526, 177);
             rtxtDeviceSend.TabIndex = 0;
             rtxtDeviceSend.Text = "";
             // 
@@ -214,7 +216,7 @@
             groupBox4.Dock = DockStyle.Fill;
             groupBox4.Location = new Point(0, 0);
             groupBox4.Name = "groupBox4";
-            groupBox4.Size = new Size(532, 296);
+            groupBox4.Size = new Size(532, 283);
             groupBox4.TabIndex = 1;
             groupBox4.TabStop = false;
             groupBox4.Text = "DeviceReceiveMessage";
@@ -225,7 +227,7 @@
             rtxtDeviceReceive.Location = new Point(3, 19);
             rtxtDeviceReceive.Name = "rtxtDeviceReceive";
             rtxtDeviceReceive.ReadOnly = true;
-            rtxtDeviceReceive.Size = new Size(526, 274);
+            rtxtDeviceReceive.Size = new Size(526, 261);
             rtxtDeviceReceive.TabIndex = 1;
             rtxtDeviceReceive.Text = "";
             // 
@@ -249,6 +251,8 @@
             // 
             // splitContainer4.Panel1
             // 
+            splitContainer4.Panel1.Controls.Add(txtStorageConnectionString);
+            splitContainer4.Panel1.Controls.Add(label4);
             splitContainer4.Panel1.Controls.Add(txtEventHubConnectionString);
             splitContainer4.Panel1.Controls.Add(label3);
             splitContainer4.Panel1.Controls.Add(btnHubOpen);
@@ -260,8 +264,25 @@
             // 
             splitContainer4.Panel2.Controls.Add(splitContainer5);
             splitContainer4.Size = new Size(565, 567);
-            splitContainer4.SplitterDistance = 52;
+            splitContainer4.SplitterDistance = 77;
             splitContainer4.TabIndex = 0;
+            // 
+            // txtStorageConnectionString
+            // 
+            txtStorageConnectionString.Location = new Point(164, 54);
+            txtStorageConnectionString.Name = "txtStorageConnectionString";
+            txtStorageConnectionString.Size = new Size(221, 23);
+            txtStorageConnectionString.TabIndex = 8;
+            txtStorageConnectionString.UseSystemPasswordChar = true;
+            // 
+            // label4
+            // 
+            label4.AutoSize = true;
+            label4.Location = new Point(5, 55);
+            label4.Name = "label4";
+            label4.Size = new Size(139, 15);
+            label4.TabIndex = 7;
+            label4.Text = "StorageConnectionString";
             // 
             // txtEventHubConnectionString
             // 
@@ -334,8 +355,8 @@
             // splitContainer5.Panel2
             // 
             splitContainer5.Panel2.Controls.Add(groupBox6);
-            splitContainer5.Size = new Size(565, 511);
-            splitContainer5.SplitterDistance = 212;
+            splitContainer5.Size = new Size(565, 486);
+            splitContainer5.SplitterDistance = 201;
             splitContainer5.TabIndex = 1;
             // 
             // groupBox5
@@ -344,7 +365,7 @@
             groupBox5.Dock = DockStyle.Fill;
             groupBox5.Location = new Point(0, 0);
             groupBox5.Name = "groupBox5";
-            groupBox5.Size = new Size(565, 212);
+            groupBox5.Size = new Size(565, 201);
             groupBox5.TabIndex = 1;
             groupBox5.TabStop = false;
             groupBox5.Text = "IotHubSendMessage";
@@ -354,7 +375,7 @@
             rtxtHubSend.Dock = DockStyle.Fill;
             rtxtHubSend.Location = new Point(3, 19);
             rtxtHubSend.Name = "rtxtHubSend";
-            rtxtHubSend.Size = new Size(559, 190);
+            rtxtHubSend.Size = new Size(559, 179);
             rtxtHubSend.TabIndex = 0;
             rtxtHubSend.Text = "";
             // 
@@ -364,7 +385,7 @@
             groupBox6.Dock = DockStyle.Fill;
             groupBox6.Location = new Point(0, 0);
             groupBox6.Name = "groupBox6";
-            groupBox6.Size = new Size(565, 295);
+            groupBox6.Size = new Size(565, 281);
             groupBox6.TabIndex = 1;
             groupBox6.TabStop = false;
             groupBox6.Text = "IotHubReceiveMessage";
@@ -375,7 +396,7 @@
             rtxtHubReceive.Location = new Point(3, 19);
             rtxtHubReceive.Name = "rtxtHubReceive";
             rtxtHubReceive.ReadOnly = true;
-            rtxtHubReceive.Size = new Size(559, 273);
+            rtxtHubReceive.Size = new Size(559, 259);
             rtxtHubReceive.TabIndex = 0;
             rtxtHubReceive.Text = "";
             // 
@@ -446,5 +467,7 @@
         private Button btnDeviceSend;
         private TextBox txtEventHubConnectionString;
         private Label label3;
+        private TextBox txtStorageConnectionString;
+        private Label label4;
     }
 }
