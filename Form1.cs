@@ -71,7 +71,7 @@ namespace IotManager
             try
             {
                 var message = Encoding.UTF8.GetString(eventArgs.Data.Body.ToArray());
-                var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+                var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
 
                 Invoke(new Action(() =>
                 {
@@ -253,9 +253,8 @@ namespace IotManager
         /// </summary>
         private async Task OnMessageReceived(Microsoft.Azure.Devices.Client.Message receivedMessage, object userContext)
         {
-            var messageBytes = receivedMessage.GetBytes();
-            var messageText = Encoding.UTF8.GetString(messageBytes);
-            var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+            var messageText = Encoding.UTF8.GetString(receivedMessage.GetBytes());
+            var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
 
             if (InvokeRequired)
             {

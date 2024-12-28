@@ -86,6 +86,7 @@
             // splitContainer1
             // 
             splitContainer1.Dock = DockStyle.Fill;
+            splitContainer1.IsSplitterFixed = true;
             splitContainer1.Location = new Point(0, 0);
             splitContainer1.Name = "splitContainer1";
             // 
@@ -96,8 +97,8 @@
             // splitContainer1.Panel2
             // 
             splitContainer1.Panel2.Controls.Add(groupBox2);
-            splitContainer1.Size = new Size(1113, 589);
-            splitContainer1.SplitterDistance = 538;
+            splitContainer1.Size = new Size(957, 589);
+            splitContainer1.SplitterDistance = 461;
             splitContainer1.TabIndex = 0;
             // 
             // groupBox1
@@ -106,7 +107,7 @@
             groupBox1.Dock = DockStyle.Fill;
             groupBox1.Location = new Point(0, 0);
             groupBox1.Name = "groupBox1";
-            groupBox1.Size = new Size(538, 589);
+            groupBox1.Size = new Size(461, 589);
             groupBox1.TabIndex = 0;
             groupBox1.TabStop = false;
             groupBox1.Text = "Device";
@@ -128,7 +129,7 @@
             // splitContainer2.Panel2
             // 
             splitContainer2.Panel2.Controls.Add(splitContainer3);
-            splitContainer2.Size = new Size(532, 567);
+            splitContainer2.Size = new Size(455, 567);
             splitContainer2.SplitterDistance = 77;
             splitContainer2.TabIndex = 0;
             // 
@@ -136,7 +137,7 @@
             // 
             btnDeviceSend.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             btnDeviceSend.Enabled = false;
-            btnDeviceSend.Location = new Point(454, 29);
+            btnDeviceSend.Location = new Point(377, 29);
             btnDeviceSend.Name = "btnDeviceSend";
             btnDeviceSend.Size = new Size(75, 23);
             btnDeviceSend.TabIndex = 4;
@@ -147,7 +148,7 @@
             // btnDevicerOpen
             // 
             btnDevicerOpen.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            btnDevicerOpen.Location = new Point(454, 4);
+            btnDevicerOpen.Location = new Point(377, 4);
             btnDevicerOpen.Name = "btnDevicerOpen";
             btnDevicerOpen.Size = new Size(75, 23);
             btnDevicerOpen.TabIndex = 2;
@@ -186,7 +187,7 @@
             // splitContainer3.Panel2
             // 
             splitContainer3.Panel2.Controls.Add(groupBox4);
-            splitContainer3.Size = new Size(532, 486);
+            splitContainer3.Size = new Size(455, 486);
             splitContainer3.SplitterDistance = 199;
             splitContainer3.TabIndex = 1;
             // 
@@ -196,7 +197,7 @@
             groupBox3.Dock = DockStyle.Fill;
             groupBox3.Location = new Point(0, 0);
             groupBox3.Name = "groupBox3";
-            groupBox3.Size = new Size(532, 199);
+            groupBox3.Size = new Size(455, 199);
             groupBox3.TabIndex = 0;
             groupBox3.TabStop = false;
             groupBox3.Text = "DeviceSendMessage";
@@ -206,7 +207,7 @@
             rtxtDeviceSend.Dock = DockStyle.Fill;
             rtxtDeviceSend.Location = new Point(3, 19);
             rtxtDeviceSend.Name = "rtxtDeviceSend";
-            rtxtDeviceSend.Size = new Size(526, 177);
+            rtxtDeviceSend.Size = new Size(449, 177);
             rtxtDeviceSend.TabIndex = 0;
             rtxtDeviceSend.Text = "";
             // 
@@ -216,7 +217,7 @@
             groupBox4.Dock = DockStyle.Fill;
             groupBox4.Location = new Point(0, 0);
             groupBox4.Name = "groupBox4";
-            groupBox4.Size = new Size(532, 283);
+            groupBox4.Size = new Size(455, 283);
             groupBox4.TabIndex = 1;
             groupBox4.TabStop = false;
             groupBox4.Text = "DeviceReceiveMessage";
@@ -227,7 +228,7 @@
             rtxtDeviceReceive.Location = new Point(3, 19);
             rtxtDeviceReceive.Name = "rtxtDeviceReceive";
             rtxtDeviceReceive.ReadOnly = true;
-            rtxtDeviceReceive.Size = new Size(526, 261);
+            rtxtDeviceReceive.Size = new Size(449, 261);
             rtxtDeviceReceive.TabIndex = 1;
             rtxtDeviceReceive.Text = "";
             // 
@@ -237,7 +238,7 @@
             groupBox2.Dock = DockStyle.Fill;
             groupBox2.Location = new Point(0, 0);
             groupBox2.Name = "groupBox2";
-            groupBox2.Size = new Size(571, 589);
+            groupBox2.Size = new Size(492, 589);
             groupBox2.TabIndex = 1;
             groupBox2.TabStop = false;
             groupBox2.Text = "IotHub";
@@ -263,7 +264,7 @@
             // splitContainer4.Panel2
             // 
             splitContainer4.Panel2.Controls.Add(splitContainer5);
-            splitContainer4.Size = new Size(565, 567);
+            splitContainer4.Size = new Size(486, 567);
             splitContainer4.SplitterDistance = 77;
             splitContainer4.TabIndex = 0;
             // 
@@ -304,7 +305,7 @@
             // btnHubOpen
             // 
             btnHubOpen.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            btnHubOpen.Location = new Point(487, 4);
+            btnHubOpen.Location = new Point(408, 4);
             btnHubOpen.Name = "btnHubOpen";
             btnHubOpen.Size = new Size(75, 23);
             btnHubOpen.TabIndex = 4;
@@ -316,7 +317,7 @@
             // 
             btnHubSend.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             btnHubSend.Enabled = false;
-            btnHubSend.Location = new Point(487, 29);
+            btnHubSend.Location = new Point(408, 29);
             btnHubSend.Name = "btnHubSend";
             btnHubSend.Size = new Size(75, 23);
             btnHubSend.TabIndex = 3;
@@ -355,8 +356,8 @@
             // splitContainer5.Panel2
             // 
             splitContainer5.Panel2.Controls.Add(groupBox6);
-            splitContainer5.Size = new Size(565, 486);
-            splitContainer5.SplitterDistance = 201;
+            splitContainer5.Size = new Size(486, 486);
+            splitContainer5.SplitterDistance = 199;
             splitContainer5.TabIndex = 1;
             // 
             // groupBox5
@@ -365,7 +366,7 @@
             groupBox5.Dock = DockStyle.Fill;
             groupBox5.Location = new Point(0, 0);
             groupBox5.Name = "groupBox5";
-            groupBox5.Size = new Size(565, 201);
+            groupBox5.Size = new Size(486, 199);
             groupBox5.TabIndex = 1;
             groupBox5.TabStop = false;
             groupBox5.Text = "IotHubSendMessage";
@@ -375,7 +376,7 @@
             rtxtHubSend.Dock = DockStyle.Fill;
             rtxtHubSend.Location = new Point(3, 19);
             rtxtHubSend.Name = "rtxtHubSend";
-            rtxtHubSend.Size = new Size(559, 179);
+            rtxtHubSend.Size = new Size(480, 177);
             rtxtHubSend.TabIndex = 0;
             rtxtHubSend.Text = "";
             // 
@@ -385,7 +386,7 @@
             groupBox6.Dock = DockStyle.Fill;
             groupBox6.Location = new Point(0, 0);
             groupBox6.Name = "groupBox6";
-            groupBox6.Size = new Size(565, 281);
+            groupBox6.Size = new Size(486, 283);
             groupBox6.TabIndex = 1;
             groupBox6.TabStop = false;
             groupBox6.Text = "IotHubReceiveMessage";
@@ -396,7 +397,7 @@
             rtxtHubReceive.Location = new Point(3, 19);
             rtxtHubReceive.Name = "rtxtHubReceive";
             rtxtHubReceive.ReadOnly = true;
-            rtxtHubReceive.Size = new Size(559, 259);
+            rtxtHubReceive.Size = new Size(480, 261);
             rtxtHubReceive.TabIndex = 0;
             rtxtHubReceive.Text = "";
             // 
@@ -404,7 +405,7 @@
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(1113, 589);
+            ClientSize = new Size(957, 589);
             Controls.Add(splitContainer1);
             Name = "Form1";
             Text = "IotManager";
