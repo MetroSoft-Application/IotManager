@@ -29,6 +29,7 @@ namespace IotManager
         private string storageConnectionString;
         private EventProcessorClient processorClient;
         private const int MAX_LINE = 30;
+        private string currentDirectMethodName = string.Empty;
 
         /// <summary>
         /// コンストラクタ
@@ -75,7 +76,7 @@ namespace IotManager
 
                 Invoke(new Action(() =>
                 {
-                    rtxtHubReceive.AppendText($"[{timestamp}] {message}{Environment.NewLine}");
+                    rtxtHubReceive.AppendText($"[Message][{timestamp}] {message}{Environment.NewLine}");
                     EnsureMaxLines(rtxtHubReceive, MAX_LINE);
                 }));
 
@@ -133,6 +134,7 @@ namespace IotManager
                 await processorClient.StopProcessingAsync();
                 btnHubOpen.Text = "Open";
                 btnHubSend.Enabled = false;
+                btnDirectMethod.Enabled = false;
                 isIotHubOpen = false;
                 return;
             }
@@ -144,7 +146,7 @@ namespace IotManager
                     eventHubConnectionString = txtEventHubConnectionString.Text;
                     eventHubName = Utility.GetEntityPathFromConnectionString(eventHubConnectionString);
 
-                    storageConnectionString= txtStorageConnectionString.Text;
+                    storageConnectionString = txtStorageConnectionString.Text;
                     var blobContainerName = Utility.Configuration["EventHub:StorageContainerName"] ?? "eventhub-checkpoints";
                     var blobContainerClient = new BlobContainerClient(storageConnectionString, blobContainerName);
                     blobContainerClient.CreateIfNotExists();
@@ -165,6 +167,7 @@ namespace IotManager
             isIotHubOpen = true;
             btnHubOpen.Text = "Close";
             btnHubSend.Enabled = true;
+            btnDirectMethod.Enabled = true;
         }
 
         /// <summary>
@@ -260,7 +263,7 @@ namespace IotManager
             {
                 Invoke(new Action(() =>
                 {
-                    rtxtDeviceReceive.AppendText($"[{timestamp}] {messageText}{Environment.NewLine}");
+                    rtxtDeviceReceive.AppendText($"[Message][{timestamp}] {messageText}{Environment.NewLine}");
                     EnsureMaxLines(rtxtDeviceReceive, MAX_LINE);
                 }));
             }
@@ -327,6 +330,96 @@ namespace IotManager
                 richTextBox.SelectionStart = richTextBox.Text.Length;
             }
             richTextBox.ScrollToCaret();
+        }
+
+        private async void btnDirectMethod_Click(object sender, EventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(txtDirectMethod.Text))
+            {
+                return;
+            }
+
+            // 既存のハンドラを削除
+            if (!string.IsNullOrEmpty(currentDirectMethodName))
+            {
+                await deviceClient.SetMethodHandlerAsync(currentDirectMethodName, null, null);
+            }
+
+            // 新しいハンドラを設定
+            await deviceClient.SetMethodHandlerAsync(txtDirectMethod.Text, DeviceMethodCallback, null);
+            currentDirectMethodName = txtDirectMethod.Text;
+
+            // ダイレクトメソッドを呼び出す
+            if (cmbDeviceId.SelectedItem != null)
+            {
+                var deviceId = cmbDeviceId.SelectedItem.ToString();
+                var payload = rtxtHubSend.Text;
+
+                // JSON 形式かどうかをチェック
+                if (!IsValidJson(payload))
+                {
+                    MessageBox.Show("ペイロードは有効なJSON形式ではありません。");
+                    return;
+                }
+
+                var methodInvocation = new CloudToDeviceMethod(currentDirectMethodName) { ResponseTimeout = TimeSpan.FromSeconds(30) };
+                methodInvocation.SetPayloadJson(payload);
+
+                try
+                {
+                    var serviceClient = ServiceClient.CreateFromConnectionString(iotHubConnectionString);
+                    var response = await serviceClient.InvokeDeviceMethodAsync(deviceId, methodInvocation);
+                    MessageBox.Show($"メソッド呼び出し成功: {response.Status}, ペイロード: {response.GetPayloadAsJson()}");
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"メソッド呼び出し失敗: {ex.Message}");
+                }
+            }
+        }
+
+        private bool IsValidJson(string strInput)
+        {
+            try
+            {
+                JsonDocument.Parse(strInput);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private async Task<MethodResponse> DeviceMethodCallback(MethodRequest methodRequest, object userContext)
+        {
+            await Task.Delay(0);
+            var payload = methodRequest.DataAsJson;
+
+            // コマンドを実行し、レスポンスを生成
+            var responsePayload = InvokeCommand(payload);
+            var responseBytes = Encoding.UTF8.GetBytes(responsePayload);
+
+            return new MethodResponse(responseBytes, 200);
+        }
+
+        private string InvokeCommand(string payload)
+        {
+            var message = payload;
+            var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
+            if (InvokeRequired)
+            {
+                Invoke(new Action(() =>
+                {
+                    rtxtDeviceReceive.AppendText($"[DirectMethod][{timestamp}] {message}{Environment.NewLine}");
+                    EnsureMaxLines(rtxtDeviceReceive, MAX_LINE);
+                }));
+            }
+            else
+            {
+                rtxtDeviceReceive.AppendText($"[{timestamp}] {message}{Environment.NewLine}");
+            }
+            return payload;
         }
     }
 }
