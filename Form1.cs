@@ -1,15 +1,5 @@
-using System.Text;
-using System.Text.Json;
 using System.Windows.Forms;
-using Azure.Messaging.EventHubs;
-using Azure.Messaging.EventHubs.Consumer;
-using Azure.Messaging.EventHubs.Processor;
-using Azure.Storage.Blobs;
-using Microsoft.Azure.Devices;
-using Microsoft.Azure.Devices.Client;
 using Microsoft.Extensions.Configuration;
-using Polly;
-using Polly.Retry;
 
 namespace IotManager
 {
@@ -18,18 +8,10 @@ namespace IotManager
     /// </summary>
     public partial class Form1 : Form
     {
-        private static DeviceClient deviceClient;
-        private string iotHubConnectionString;
-        private AsyncRetryPolicy retryPolicy;
-        private RegistryManager registryManager;
+        private IotManagerLogic iotManagerLogic;
         private bool isDeviceOpen = false;
         private bool isIotHubOpen = false;
-        private string eventHubConnectionString;
-        private string eventHubName;
-        private string storageConnectionString;
-        private EventProcessorClient processorClient;
         private const int MAX_LINE = 30;
-        private string currentDirectMethodName = string.Empty;
 
         /// <summary>
         /// コンストラクタ
@@ -39,63 +21,91 @@ namespace IotManager
             InitializeComponent();
             AutoScaleMode = AutoScaleMode.Dpi;
 
-            var configuration = new ConfigurationBuilder()
-                .SetBasePath(Directory.GetCurrentDirectory())
-                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-                .Build();
-
-            iotHubConnectionString = Utility.Configuration["IoTHub:ConnectionString"];
+            var iotHubConnectionString = Utility.Configuration["IoTHub:ConnectionString"];
             txtIotHubConnectionString.Text = iotHubConnectionString;
 
-            eventHubConnectionString = Utility.Configuration["EventHub:ConnectionString"];
+            var eventHubConnectionString = Utility.Configuration["EventHub:ConnectionString"];
             txtEventHubConnectionString.Text = eventHubConnectionString;
 
-            storageConnectionString = Utility.Configuration["EventHub:StorageConnectionString"];
+            var storageConnectionString = Utility.Configuration["EventHub:StorageConnectionString"];
             txtStorageConnectionString.Text = storageConnectionString;
 
-            retryPolicy = Policy
-                .Handle<Exception>()
-                .WaitAndRetryAsync(3, retryAttempt => TimeSpan.FromSeconds(2), (exception, timeSpan, retryCount, context) =>
-                {
-                    MessageBox.Show($"操作が失敗しました {exception.Message}. リトライ回数: {retryCount}");
-                });
+            // IoTManagerLogicを初期化
+            iotManagerLogic = new IotManagerLogic(iotHubConnectionString, eventHubConnectionString, storageConnectionString);
 
-            registryManager = RegistryManager.CreateFromConnectionString(iotHubConnectionString);
+            // イベントハンドラを登録
+            iotManagerLogic.OnMessageReceived += OnDeviceMessageReceived;
+            iotManagerLogic.OnHubMessageReceived += OnHubMessageReceived;
+            iotManagerLogic.OnDirectMethodReceived += OnDirectMethodReceived;
         }
 
         /// <summary>
-        /// イベントハンドラでメッセージを処理
+        /// デバイスメッセージ受信時の処理
         /// </summary>
-        /// <param name="eventArgs">イベント引数</param>
-        private async Task ProcessEventHandler(ProcessEventArgs eventArgs)
+        private async Task OnDeviceMessageReceived(string message)
         {
-            try
+            await Task.Run(() =>
             {
-                var message = Encoding.UTF8.GetString(eventArgs.Data.Body.ToArray());
-                var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
-
-                Invoke(new Action(() =>
+                if (InvokeRequired)
                 {
-                    rtxtHubReceive.AppendText($"[Message][{timestamp}] {message}{Environment.NewLine}");
+                    Invoke(new Action(() =>
+                    {
+                        rtxtDeviceReceive.AppendText($"{message}{Environment.NewLine}");
+                        EnsureMaxLines(rtxtDeviceReceive, MAX_LINE);
+                    }));
+                }
+                else
+                {
+                    rtxtDeviceReceive.AppendText($"{message}{Environment.NewLine}");
+                    EnsureMaxLines(rtxtDeviceReceive, MAX_LINE);
+                }
+            });
+        }
+
+        /// <summary>
+        /// Hub メッセージ受信時の処理
+        /// </summary>
+        private async Task OnHubMessageReceived(string message)
+        {
+            await Task.Run(() =>
+            {
+                if (InvokeRequired)
+                {
+                    Invoke(new Action(() =>
+                    {
+                        rtxtHubReceive.AppendText($"{message}{Environment.NewLine}");
+                        EnsureMaxLines(rtxtHubReceive, MAX_LINE);
+                    }));
+                }
+                else
+                {
+                    rtxtHubReceive.AppendText($"{message}{Environment.NewLine}");
                     EnsureMaxLines(rtxtHubReceive, MAX_LINE);
-                }));
-
-                await eventArgs.UpdateCheckpointAsync();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error processing event: {ex.Message}");
-            }
+                }
+            });
         }
 
         /// <summary>
-        /// エラーハンドラでエラーを処理
+        /// ダイレクトメソッド受信時の処理
         /// </summary>
-        /// <param name="eventArgs">イベント引数</param>
-        private Task ProcessErrorHandler(ProcessErrorEventArgs eventArgs)
+        private async Task OnDirectMethodReceived(string message)
         {
-            MessageBox.Show($"Error: {eventArgs.Exception.Message}");
-            return Task.CompletedTask;
+            await Task.Run(() =>
+            {
+                if (InvokeRequired)
+                {
+                    Invoke(new Action(() =>
+                    {
+                        rtxtDeviceReceive.AppendText($"{message}{Environment.NewLine}");
+                        EnsureMaxLines(rtxtDeviceReceive, MAX_LINE);
+                    }));
+                }
+                else
+                {
+                    rtxtDeviceReceive.AppendText($"{message}{Environment.NewLine}");
+                    EnsureMaxLines(rtxtDeviceReceive, MAX_LINE);
+                }
+            });
         }
 
         /// <summary>
@@ -105,14 +115,13 @@ namespace IotManager
         {
             try
             {
-                var query = registryManager.CreateQuery("SELECT * FROM devices");
-                var devices = await query.GetNextAsTwinAsync();
-                if (devices.Any())
+                var deviceIds = await iotManagerLogic.GetDeviceIdsAsync();
+                if (deviceIds.Any())
                 {
                     cmbDeviceId.Items.Clear();
-                    foreach (var twin in devices)
+                    foreach (var deviceId in deviceIds)
                     {
-                        cmbDeviceId.Items.Add(twin.DeviceId);
+                        cmbDeviceId.Items.Add(deviceId);
                     }
 
                     cmbDeviceId.SelectedIndex = 0;
@@ -129,45 +138,29 @@ namespace IotManager
         /// </summary>
         private async void btnHubOpen_Click(object sender, EventArgs e)
         {
-            if (isIotHubOpen)
-            {
-                await processorClient.StopProcessingAsync();
-                btnHubOpen.Text = "Open";
-                btnHubSend.Enabled = false;
-                btnDirectMethod.Enabled = false;
-                isIotHubOpen = false;
-                return;
-            }
-
             try
             {
-                if (processorClient is null)
+                if (isIotHubOpen)
                 {
-                    eventHubConnectionString = txtEventHubConnectionString.Text;
-                    eventHubName = Utility.GetEntityPathFromConnectionString(eventHubConnectionString);
-
-                    storageConnectionString = txtStorageConnectionString.Text;
-                    var blobContainerName = Utility.Configuration["EventHub:StorageContainerName"] ?? "eventhub-checkpoints";
-                    var blobContainerClient = new BlobContainerClient(storageConnectionString, blobContainerName);
-                    blobContainerClient.CreateIfNotExists();
-
-                    processorClient = new EventProcessorClient(blobContainerClient, EventHubConsumerClient.DefaultConsumerGroupName, eventHubConnectionString, eventHubName);
-
-                    processorClient.ProcessEventAsync += ProcessEventHandler;
-                    processorClient.ProcessErrorAsync += ProcessErrorHandler;
+                    await iotManagerLogic.StopEventHubProcessingAsync();
+                    btnHubOpen.Text = "Open";
+                    btnHubSend.Enabled = false;
+                    btnDirectMethod.Enabled = false;
+                    isIotHubOpen = false;
+                    return;
                 }
 
-                await processorClient.StartProcessingAsync();
+                await iotManagerLogic.StartEventHubProcessingAsync();
+
+                isIotHubOpen = true;
+                btnHubOpen.Text = "Close";
+                btnHubSend.Enabled = true;
+                btnDirectMethod.Enabled = true;
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Error initializing Event Processor: {ex.Message}");
             }
-
-            isIotHubOpen = true;
-            btnHubOpen.Text = "Close";
-            btnHubSend.Enabled = true;
-            btnDirectMethod.Enabled = true;
         }
 
         /// <summary>
@@ -175,20 +168,17 @@ namespace IotManager
         /// </summary>
         private async void btnHubSend_Click(object sender, EventArgs e)
         {
-            var deviceId = cmbDeviceId.SelectedItem.ToString();
-            var message = rtxtHubSend.Text;
-            await SendCloudToDeviceMessageAsync(deviceId, message);
-        }
-
-        /// <summary>
-        /// クラウドからデバイスにメッセージを送信
-        /// </summary>
-        private async Task SendCloudToDeviceMessageAsync(string deviceId, string message)
-        {
-            var serviceClient = ServiceClient.CreateFromConnectionString(iotHubConnectionString);
-            var commandMessage = new Microsoft.Azure.Devices.Message(Encoding.ASCII.GetBytes(message));
-            await serviceClient.SendAsync(deviceId, commandMessage);
-            MessageBox.Show($"メッセージがデバイス {deviceId} に送信されました: {message}");
+            try
+            {
+                var deviceId = cmbDeviceId.SelectedItem.ToString();
+                var message = rtxtHubSend.Text;
+                await iotManagerLogic.SendCloudToDeviceMessageAsync(deviceId, message);
+                MessageBox.Show($"メッセージがデバイス {deviceId} に送信されました: {message}");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"メッセージ送信に失敗しました: {ex.Message}");
+            }
         }
 
         /// <summary>
@@ -204,40 +194,31 @@ namespace IotManager
         /// </summary>
         private async Task DeviceOpen()
         {
-            var deviceId = cmbDeviceId.SelectedItem.ToString();
-            var device = await registryManager.GetDeviceAsync(deviceId);
-            var deviceConnectionString = Utility.BuildDeviceConnectionString(deviceId, device, iotHubConnectionString);
-
-            if (isDeviceOpen)
+            try
             {
-                btnDevicerOpen.Text = "Open";
-                await retryPolicy.ExecuteAsync(async () =>
+                var deviceId = cmbDeviceId.SelectedItem.ToString();
+
+                if (isDeviceOpen)
                 {
-                    deviceClient = DeviceClient.CreateFromConnectionString(deviceConnectionString, Microsoft.Azure.Devices.Client.TransportType.Mqtt_WebSocket_Only);
-                    await deviceClient.CloseAsync();
-                });
+                    await iotManagerLogic.CloseDeviceAsync();
+                    btnDevicerOpen.Text = "Open";
+                    btnDeviceSend.Enabled = false;
+                    cmbDeviceId.Enabled = true;
+                    isDeviceOpen = false;
+                    return;
+                }
 
-                btnDeviceSend.Enabled = false;
-                cmbDeviceId.Enabled = true;
-                isDeviceOpen = false;
-                return;
+                await iotManagerLogic.OpenDeviceAsync(deviceId);
+
+                isDeviceOpen = true;
+                btnDevicerOpen.Text = "Close";
+                btnDeviceSend.Enabled = true;
+                cmbDeviceId.Enabled = false;
             }
-
-            await retryPolicy.ExecuteAsync(async () =>
+            catch (Exception ex)
             {
-                deviceClient = DeviceClient.CreateFromConnectionString(deviceConnectionString, Microsoft.Azure.Devices.Client.TransportType.Mqtt_WebSocket_Only);
-                await deviceClient.OpenAsync();
-            });
-
-            await retryPolicy.ExecuteAsync(async () =>
-            {
-                await deviceClient.SetReceiveMessageHandlerAsync(OnMessageReceived, null);
-            });
-
-            isDeviceOpen = true;
-            btnDevicerOpen.Text = "Close";
-            btnDeviceSend.Enabled = true;
-            cmbDeviceId.Enabled = false;
+                MessageBox.Show($"デバイス操作でエラーが発生しました: {ex.Message}");
+            }
         }
 
         /// <summary>
@@ -245,66 +226,14 @@ namespace IotManager
         /// </summary>
         private async void btnDeviceSend_Click(object sender, EventArgs e)
         {
-            await retryPolicy.ExecuteAsync(async () =>
-            {
-                await SendMessageAsync(rtxtDeviceSend.Text);
-            });
-        }
-
-        /// <summary>
-        /// メッセージを受信した際の処理
-        /// </summary>
-        private async Task OnMessageReceived(Microsoft.Azure.Devices.Client.Message receivedMessage, object userContext)
-        {
-            var messageText = Encoding.UTF8.GetString(receivedMessage.GetBytes());
-            var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
-
-            if (InvokeRequired)
-            {
-                Invoke(new Action(() =>
-                {
-                    rtxtDeviceReceive.AppendText($"[Message][{timestamp}] {messageText}{Environment.NewLine}");
-                    EnsureMaxLines(rtxtDeviceReceive, MAX_LINE);
-                }));
-            }
-            else
-            {
-                rtxtDeviceReceive.AppendText($"[{timestamp}] {messageText}{Environment.NewLine}");
-            }
-
-            await deviceClient.CompleteAsync(receivedMessage);
-        }
-
-        /// <summary>
-        /// メッセージを送信
-        /// </summary>
-        private static async Task SendMessageAsync(string message)
-        {
-            var jstTime = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTime.UtcNow, "Tokyo Standard Time");
-            var messageObject = new { message = $"{message}" };
-            var jsonMessage = JsonSerializer.Serialize(messageObject);
-            var messageToSend = new Microsoft.Azure.Devices.Client.Message(Encoding.UTF8.GetBytes(jsonMessage))
-            {
-                ContentType = "application/json",
-                ContentEncoding = "utf-8"
-            };
-            messageToSend.Properties.Add("insertJstTime", jstTime.ToString("o"));
-            messageToSend.MessageId = Guid.NewGuid().ToString();
-
             try
             {
-                var sendStartTime = DateTime.Now;
-                await deviceClient.SendEventAsync(messageToSend);
-                var sendEndTime = DateTime.Now;
-                MessageBox.Show($"メッセージ送信完了: {sendEndTime:o} - {jsonMessage}");
-            }
-            catch (OperationCanceledException ex)
-            {
-                MessageBox.Show($"メッセージ送信がキャンセルされました {ex.Message}");
+                await iotManagerLogic.SendDeviceMessageAsync(rtxtDeviceSend.Text);
+                MessageBox.Show("メッセージ送信完了");
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"メッセージ送信が失敗しました {ex.Message}");
+                MessageBox.Show($"メッセージ送信が失敗しました: {ex.Message}");
             }
         }
 
@@ -334,92 +263,33 @@ namespace IotManager
 
         private async void btnDirectMethod_Click(object sender, EventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(txtDirectMethod.Text))
+            try
             {
-                return;
-            }
-
-            // 既存のハンドラを削除
-            if (!string.IsNullOrEmpty(currentDirectMethodName))
-            {
-                await deviceClient.SetMethodHandlerAsync(currentDirectMethodName, null, null);
-            }
-
-            // 新しいハンドラを設定
-            await deviceClient.SetMethodHandlerAsync(txtDirectMethod.Text, DeviceMethodCallback, null);
-            currentDirectMethodName = txtDirectMethod.Text;
-
-            // ダイレクトメソッドを呼び出す
-            if (cmbDeviceId.SelectedItem != null)
-            {
-                var deviceId = cmbDeviceId.SelectedItem.ToString();
-                var payload = rtxtHubSend.Text;
-
-                // JSON 形式かどうかをチェック
-                if (!IsValidJson(payload))
+                if (string.IsNullOrWhiteSpace(txtDirectMethod.Text))
                 {
-                    MessageBox.Show("ペイロードは有効なJSON形式ではありません。");
                     return;
                 }
 
-                var methodInvocation = new CloudToDeviceMethod(currentDirectMethodName) { ResponseTimeout = TimeSpan.FromSeconds(30) };
-                methodInvocation.SetPayloadJson(payload);
-
-                try
+                if (cmbDeviceId.SelectedItem != null)
                 {
-                    var serviceClient = ServiceClient.CreateFromConnectionString(iotHubConnectionString);
-                    var response = await serviceClient.InvokeDeviceMethodAsync(deviceId, methodInvocation);
+                    var deviceId = cmbDeviceId.SelectedItem.ToString();
+                    var payload = rtxtHubSend.Text;
+
+                    // JSON 形式かどうかをチェック
+                    if (!IotManagerLogic.IsValidJson(payload))
+                    {
+                        MessageBox.Show("ペイロードは有効なJSON形式ではありません。");
+                        return;
+                    }
+
+                    var response = await iotManagerLogic.InvokeDirectMethodAsync(deviceId, txtDirectMethod.Text, payload);
                     MessageBox.Show($"メソッド呼び出し成功: {response.Status}, ペイロード: {response.GetPayloadAsJson()}");
                 }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"メソッド呼び出し失敗: {ex.Message}");
-                }
             }
-        }
-
-        private bool IsValidJson(string strInput)
-        {
-            try
+            catch (Exception ex)
             {
-                JsonDocument.Parse(strInput);
-                return true;
+                MessageBox.Show($"メソッド呼び出し失敗: {ex.Message}");
             }
-            catch
-            {
-                return false;
-            }
-        }
-
-        private async Task<MethodResponse> DeviceMethodCallback(MethodRequest methodRequest, object userContext)
-        {
-            await Task.Delay(0);
-            var payload = methodRequest.DataAsJson;
-
-            // コマンドを実行し、レスポンスを生成
-            var responsePayload = InvokeCommand(payload);
-            var responseBytes = Encoding.UTF8.GetBytes(responsePayload);
-
-            return new MethodResponse(responseBytes, 200);
-        }
-
-        private string InvokeCommand(string payload)
-        {
-            var message = payload;
-            var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
-            if (InvokeRequired)
-            {
-                Invoke(new Action(() =>
-                {
-                    rtxtDeviceReceive.AppendText($"[DirectMethod][{timestamp}] {message}{Environment.NewLine}");
-                    EnsureMaxLines(rtxtDeviceReceive, MAX_LINE);
-                }));
-            }
-            else
-            {
-                rtxtDeviceReceive.AppendText($"[{timestamp}] {message}{Environment.NewLine}");
-            }
-            return payload;
         }
     }
 }
