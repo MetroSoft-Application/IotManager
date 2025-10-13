@@ -1,9 +1,5 @@
 using System.Text;
 using System.Text.Json;
-using Azure.Messaging.EventHubs;
-using Azure.Messaging.EventHubs.Consumer;
-using Azure.Messaging.EventHubs.Processor;
-using Azure.Storage.Blobs;
 using Microsoft.Azure.Devices;
 using Microsoft.Azure.Devices.Client;
 using Polly;
@@ -12,42 +8,32 @@ using Polly.Retry;
 namespace IotManager
 {
     /// <summary>
-    /// IoT操作を管理するクラス
+    /// デバイス操作を管理するクラス
     /// </summary>
-    public class IotManagerLogic
+    public class DeviceManager
     {
         private static DeviceClient deviceClient;
         private readonly string iotHubConnectionString;
         private readonly AsyncRetryPolicy retryPolicy;
         private readonly RegistryManager registryManager;
-        private readonly string eventHubConnectionString;
-        private readonly string eventHubName;
-        private readonly string storageConnectionString;
-        private EventProcessorClient processorClient;
         private string currentDirectMethodName = string.Empty;
 
         public event Func<string, Task> OnMessageReceived;
-        public event Func<string, Task> OnHubMessageReceived;
         public event Func<string, Task> OnDirectMethodReceived;
 
         /// <summary>
         /// コンストラクタ
         /// </summary>
         /// <param name="iotHubConnectionString">IoT Hub接続文字列</param>
-        /// <param name="eventHubConnectionString">Event Hub接続文字列</param>
-        /// <param name="storageConnectionString">Storage接続文字列</param>
-        public IotManagerLogic(string iotHubConnectionString, string eventHubConnectionString, string storageConnectionString)
+        public DeviceManager(string iotHubConnectionString)
         {
             this.iotHubConnectionString = iotHubConnectionString;
-            this.eventHubConnectionString = eventHubConnectionString;
-            this.storageConnectionString = storageConnectionString;
 
             retryPolicy = Policy
                 .Handle<Exception>()
                 .WaitAndRetryAsync(3, retryAttempt => TimeSpan.FromSeconds(2));
 
             registryManager = RegistryManager.CreateFromConnectionString(iotHubConnectionString);
-            eventHubName = Utility.GetEntityPathFromConnectionString(eventHubConnectionString);
         }
 
         /// <summary>
@@ -68,43 +54,12 @@ namespace IotManager
         }
 
         /// <summary>
-        /// Event Hub処理を開始
-        /// </summary>
-        public async Task StartEventHubProcessingAsync()
-        {
-            if (processorClient is null)
-            {
-                var blobContainerName = Utility.Configuration["EventHub:StorageContainerName"] ?? "eventhub-checkpoints";
-                var blobContainerClient = new BlobContainerClient(storageConnectionString, blobContainerName);
-                blobContainerClient.CreateIfNotExists();
-
-                processorClient = new EventProcessorClient(blobContainerClient, EventHubConsumerClient.DefaultConsumerGroupName, eventHubConnectionString, eventHubName);
-
-                processorClient.ProcessEventAsync += ProcessEventHandler;
-                processorClient.ProcessErrorAsync += ProcessErrorHandler;
-            }
-
-            await processorClient.StartProcessingAsync();
-        }
-
-        /// <summary>
-        /// Event Hub処理を停止
-        /// </summary>
-        public async Task StopEventHubProcessingAsync()
-        {
-            if (processorClient != null)
-            {
-                await processorClient.StopProcessingAsync();
-            }
-        }
-
-        /// <summary>
         /// デバイスを開く
         /// </summary>
         public async Task OpenDeviceAsync(string deviceId)
         {
             var device = await registryManager.GetDeviceAsync(deviceId);
-            var deviceConnectionString = Utility.BuildDeviceConnectionString(deviceId, device, iotHubConnectionString);
+            var deviceConnectionString = Utility.BuildDeviceConnectionString(deviceId, device.Authentication.SymmetricKey.PrimaryKey, iotHubConnectionString);
 
             await retryPolicy.ExecuteAsync(async () =>
             {
@@ -144,16 +99,6 @@ namespace IotManager
         }
 
         /// <summary>
-        /// クラウドからデバイスにメッセージを送信
-        /// </summary>
-        public async Task SendCloudToDeviceMessageAsync(string deviceId, string message)
-        {
-            var serviceClient = ServiceClient.CreateFromConnectionString(iotHubConnectionString);
-            var commandMessage = new Microsoft.Azure.Devices.Message(Encoding.ASCII.GetBytes(message));
-            await serviceClient.SendAsync(deviceId, commandMessage);
-        }
-
-        /// <summary>
         /// ダイレクトメソッドを設定して呼び出し
         /// </summary>
         public async Task<CloudToDeviceMethodResult> InvokeDirectMethodAsync(string deviceId, string methodName, string payload)
@@ -177,32 +122,6 @@ namespace IotManager
         }
 
         // プライベートメソッド
-
-        private async Task ProcessEventHandler(ProcessEventArgs eventArgs)
-        {
-            try
-            {
-                var message = Encoding.UTF8.GetString(eventArgs.Data.Body.ToArray());
-                var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
-
-                if (OnHubMessageReceived != null)
-                {
-                    await OnHubMessageReceived($"[Message][{timestamp}] {message}");
-                }
-
-                await eventArgs.UpdateCheckpointAsync();
-            }
-            catch (Exception)
-            {
-                // エラーハンドリングはUI側で処理
-            }
-        }
-
-        private Task ProcessErrorHandler(ProcessErrorEventArgs eventArgs)
-        {
-            // エラーハンドリングはUI側で処理
-            return Task.CompletedTask;
-        }
 
         private async Task OnDeviceMessageReceived(Microsoft.Azure.Devices.Client.Message receivedMessage, object userContext)
         {
@@ -246,19 +165,6 @@ namespace IotManager
             messageToSend.MessageId = Guid.NewGuid().ToString();
 
             await deviceClient.SendEventAsync(messageToSend);
-        }
-
-        public static bool IsValidJson(string strInput)
-        {
-            try
-            {
-                JsonDocument.Parse(strInput);
-                return true;
-            }
-            catch
-            {
-                return false;
-            }
         }
     }
 }

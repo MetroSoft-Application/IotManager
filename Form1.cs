@@ -8,7 +8,8 @@ namespace IotManager
     /// </summary>
     public partial class Form1 : Form
     {
-        private IotManagerLogic iotManagerLogic;
+        private DeviceManager deviceManager;
+        private HubManager hubManager;
         private bool isDeviceOpen = false;
         private bool isIotHubOpen = false;
         private const int MAX_LINE = 30;
@@ -30,13 +31,14 @@ namespace IotManager
             var storageConnectionString = Utility.Configuration["EventHub:StorageConnectionString"];
             txtStorageConnectionString.Text = storageConnectionString;
 
-            // IoTManagerLogicを初期化
-            iotManagerLogic = new IotManagerLogic(iotHubConnectionString, eventHubConnectionString, storageConnectionString);
+            // DeviceManagerとHubManagerを初期化
+            deviceManager = new DeviceManager(iotHubConnectionString);
+            hubManager = new HubManager(iotHubConnectionString, eventHubConnectionString, storageConnectionString);
 
             // イベントハンドラを登録
-            iotManagerLogic.OnMessageReceived += OnDeviceMessageReceived;
-            iotManagerLogic.OnHubMessageReceived += OnHubMessageReceived;
-            iotManagerLogic.OnDirectMethodReceived += OnDirectMethodReceived;
+            deviceManager.OnMessageReceived += OnDeviceMessageReceived;
+            deviceManager.OnDirectMethodReceived += OnDirectMethodReceived;
+            hubManager.OnHubMessageReceived += OnHubMessageReceived;
         }
 
         /// <summary>
@@ -115,7 +117,7 @@ namespace IotManager
         {
             try
             {
-                var deviceIds = await iotManagerLogic.GetDeviceIdsAsync();
+                var deviceIds = await deviceManager.GetDeviceIdsAsync();
                 if (deviceIds.Any())
                 {
                     cmbDeviceId.Items.Clear();
@@ -142,7 +144,7 @@ namespace IotManager
             {
                 if (isIotHubOpen)
                 {
-                    await iotManagerLogic.StopEventHubProcessingAsync();
+                    await hubManager.StopEventHubProcessingAsync();
                     btnHubOpen.Text = "Open";
                     btnHubSend.Enabled = false;
                     btnDirectMethod.Enabled = false;
@@ -150,7 +152,7 @@ namespace IotManager
                     return;
                 }
 
-                await iotManagerLogic.StartEventHubProcessingAsync();
+                await hubManager.StartEventHubProcessingAsync();
 
                 isIotHubOpen = true;
                 btnHubOpen.Text = "Close";
@@ -172,7 +174,7 @@ namespace IotManager
             {
                 var deviceId = cmbDeviceId.SelectedItem.ToString();
                 var message = rtxtHubSend.Text;
-                await iotManagerLogic.SendCloudToDeviceMessageAsync(deviceId, message);
+                await hubManager.SendCloudToDeviceMessageAsync(deviceId, message);
                 MessageBox.Show($"メッセージがデバイス {deviceId} に送信されました: {message}");
             }
             catch (Exception ex)
@@ -200,7 +202,7 @@ namespace IotManager
 
                 if (isDeviceOpen)
                 {
-                    await iotManagerLogic.CloseDeviceAsync();
+                    await deviceManager.CloseDeviceAsync();
                     btnDevicerOpen.Text = "Open";
                     btnDeviceSend.Enabled = false;
                     cmbDeviceId.Enabled = true;
@@ -208,7 +210,7 @@ namespace IotManager
                     return;
                 }
 
-                await iotManagerLogic.OpenDeviceAsync(deviceId);
+                await deviceManager.OpenDeviceAsync(deviceId);
 
                 isDeviceOpen = true;
                 btnDevicerOpen.Text = "Close";
@@ -228,7 +230,7 @@ namespace IotManager
         {
             try
             {
-                await iotManagerLogic.SendDeviceMessageAsync(rtxtDeviceSend.Text);
+                await deviceManager.SendDeviceMessageAsync(rtxtDeviceSend.Text);
                 MessageBox.Show("メッセージ送信完了");
             }
             catch (Exception ex)
@@ -276,13 +278,13 @@ namespace IotManager
                     var payload = rtxtHubSend.Text;
 
                     // JSON 形式かどうかをチェック
-                    if (!IotManagerLogic.IsValidJson(payload))
+                    if (!Utility.IsValidJson(payload))
                     {
                         MessageBox.Show("ペイロードは有効なJSON形式ではありません。");
                         return;
                     }
 
-                    var response = await iotManagerLogic.InvokeDirectMethodAsync(deviceId, txtDirectMethod.Text, payload);
+                    var response = await deviceManager.InvokeDirectMethodAsync(deviceId, txtDirectMethod.Text, payload);
                     MessageBox.Show($"メソッド呼び出し成功: {response.Status}, ペイロード: {response.GetPayloadAsJson()}");
                 }
             }

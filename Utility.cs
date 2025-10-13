@@ -1,4 +1,5 @@
-﻿using Microsoft.Azure.Devices;
+﻿using System.Text.Json;
+using Microsoft.Azure.Devices;
 using Microsoft.Extensions.Configuration;
 
 namespace IotManager
@@ -8,7 +9,7 @@ namespace IotManager
     /// </summary>
     public static class Utility
     {
-        public static readonly IConfiguration Configuration;
+        public static IConfiguration Configuration { get; }
 
         /// <summary>
         /// 静的コンストラクタ
@@ -24,11 +25,11 @@ namespace IotManager
         /// <summary>
         /// 接続文字列からIoT Hubのホスト名を取得
         /// </summary>
-        /// <param name="connectionString">接続文字列</param>
+        /// <param name="iotHubConnectionString">IotHubの接続文字列</param>
         /// <returns>IoT Hubのホスト名</returns>
-        public static string GetIoTHubHostNameFromConnectionString(string connectionString)
+        public static string GetIoTHubHostNameFromConnectionString(string iotHubConnectionString)
         {
-            var parts = connectionString.Split(';');
+            var parts = iotHubConnectionString.Split(';');
             foreach (var part in parts)
             {
                 if (part.StartsWith("HostName=", StringComparison.OrdinalIgnoreCase))
@@ -42,11 +43,11 @@ namespace IotManager
         /// <summary>
         /// 接続文字列からEntityPathを取得
         /// </summary>
-        /// <param name="connectionString">接続文字列</param>
+        /// <param name="eventHubConnectionString">Eventhubの接続文字列</param>
         /// <returns>EntityPath</returns>
-        public static string GetEntityPathFromConnectionString(string connectionString)
+        public static string GetEntityPathFromConnectionString(string eventHubConnectionString)
         {
-            var parts = connectionString.Split(';');
+            var parts = eventHubConnectionString.Split(';');
             foreach (var part in parts)
             {
                 if (part.StartsWith("EntityPath=", StringComparison.OrdinalIgnoreCase))
@@ -61,15 +62,32 @@ namespace IotManager
         /// デバイス接続文字列を構築
         /// </summary>
         /// <param name="deviceId">デバイスID</param>
-        /// <param name="device">デバイス情報</param>
-        /// <param name="connectionstring">接続文字列</param>
+        /// <param name="primaryKey">デバイスのプライマリキー</param>
+        /// <param name="iotHubconnectionstring">IotHubの接続文字列</param>
         /// <returns>デバイス接続文字列</returns>
-        public static string BuildDeviceConnectionString(string deviceId, Device device, string connectionstring)
+        public static string BuildDeviceConnectionString(string deviceId, string primaryKey, string iotHubconnectionstring)
         {
-            var primaryKey = device.Authentication.SymmetricKey.PrimaryKey;
-            var iotHubHostName = Utility.GetIoTHubHostNameFromConnectionString(connectionstring);
+            var iotHubHostName = Utility.GetIoTHubHostNameFromConnectionString(iotHubconnectionstring);
             var deviceConnectionString = $"HostName={iotHubHostName};DeviceId={deviceId};SharedAccessKey={primaryKey}";
             return deviceConnectionString;
+        }
+
+        /// <summary>
+        /// JSON形式の文字列かどうかを検証
+        /// </summary>
+        /// <param name="strInput">検証する文字列</param>
+        /// <returns>JSON形式の場合true</returns>
+        public static bool IsValidJson(string strInput)
+        {
+            try
+            {
+                JsonDocument.Parse(strInput);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 }
