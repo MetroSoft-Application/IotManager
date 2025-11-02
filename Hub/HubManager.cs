@@ -1,12 +1,11 @@
 using System.Text;
-using System.Text.Json;
 using Azure.Messaging.EventHubs;
 using Azure.Messaging.EventHubs.Consumer;
 using Azure.Messaging.EventHubs.Processor;
 using Azure.Storage.Blobs;
 using Microsoft.Azure.Devices;
 
-namespace IotManager
+namespace IotManager.Hub
 {
     /// <summary>
     /// Hub操作を管理するクラス
@@ -69,6 +68,8 @@ namespace IotManager
         /// <summary>
         /// クラウドからデバイスにメッセージを送信
         /// </summary>
+        /// <param name="deviceId">メッセージ送信先のデバイス ID</param>
+        /// <param name="message">送信するメッセージ本文</param>
         public async Task SendCloudToDeviceMessageAsync(string deviceId, string message)
         {
             var serviceClient = ServiceClient.CreateFromConnectionString(iotHubConnectionString);
@@ -76,6 +77,10 @@ namespace IotManager
             await serviceClient.SendAsync(deviceId, commandMessage);
         }
 
+        /// <summary>
+        /// Event を受信した時のハンドラ
+        /// </summary>
+        /// <param name="eventArgs">処理中のイベント情報</param>
         private async Task ProcessEventHandler(ProcessEventArgs eventArgs)
         {
             var message = Encoding.UTF8.GetString(eventArgs.Data.Body.ToArray());
@@ -89,6 +94,10 @@ namespace IotManager
             await eventArgs.UpdateCheckpointAsync();
         }
 
+        /// <summary>
+        /// エラー発生時のハンドラ
+        /// </summary>
+        /// <param name="eventArgs">エラー発生時のイベント情報</param>
         private Task ProcessErrorHandler(ProcessErrorEventArgs eventArgs)
         {
             return Task.CompletedTask;

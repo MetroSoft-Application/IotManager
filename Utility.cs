@@ -37,6 +37,7 @@ namespace IotManager
                     return part.Substring("HostName=".Length);
                 }
             }
+
             throw new ArgumentException("Invalid connection string, no HostName found.");
         }
 
@@ -55,6 +56,7 @@ namespace IotManager
                     return part.Substring("EntityPath=".Length);
                 }
             }
+
             throw new ArgumentException("Invalid connection string, no EntityPath found.");
         }
 

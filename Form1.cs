@@ -1,4 +1,6 @@
 using System.Windows.Forms;
+using IotManager.Device;
+using IotManager.Hub;
 using Microsoft.Extensions.Configuration;
 
 namespace IotManager
@@ -138,6 +140,8 @@ namespace IotManager
         /// <summary>
         /// IoT Hubを開くボタンのクリックイベント
         /// </summary>
+        /// <param name="sender">イベント送信元のオブジェクト</param>
+        /// <param name="e">イベント引数</param>
         private async void btnHubOpen_Click(object sender, EventArgs e)
         {
             try
@@ -168,6 +172,8 @@ namespace IotManager
         /// <summary>
         /// IoT Hubにメッセージを送信するボタンのクリックイベント
         /// </summary>
+        /// <param name="sender">イベント送信元のオブジェクト</param>
+        /// <param name="e">イベント引数</param>
         private async void btnHubSend_Click(object sender, EventArgs e)
         {
             try
@@ -186,6 +192,8 @@ namespace IotManager
         /// <summary>
         /// デバイスを開くボタンのクリックイベント
         /// </summary>
+        /// <param name="sender">イベント送信元のオブジェクト</param>
+        /// <param name="e">イベント引数</param>
         private async void btnDevicerOpen_Click(object sender, EventArgs e)
         {
             await DeviceOpen();
@@ -226,6 +234,8 @@ namespace IotManager
         /// <summary>
         /// デバイスにメッセージを送信するボタンのクリックイベント
         /// </summary>
+        /// <param name="sender">イベント送信元のオブジェクト</param>
+        /// <param name="e">イベント引数</param>
         private async void btnDeviceSend_Click(object sender, EventArgs e)
         {
             try
@@ -242,6 +252,8 @@ namespace IotManager
         /// <summary>
         /// フォームロード時の処理
         /// </summary>
+        /// <param name="sender">イベント送信元のオブジェクト</param>
+        /// <param name="e">イベント引数</param>
         private async void Form1_Load(object sender, EventArgs e)
         {
             await LoadDeviceIds();
@@ -263,6 +275,8 @@ namespace IotManager
             richTextBox.ScrollToCaret();
         }
 
+        /// <param name="sender">イベント送信元のオブジェクト</param>
+        /// <param name="e">イベント引数</param>
         private async void btnDirectMethod_Click(object sender, EventArgs e)
         {
             try
