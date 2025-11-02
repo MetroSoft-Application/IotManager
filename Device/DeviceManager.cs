@@ -13,7 +13,7 @@ namespace IotManager.Device
     /// </summary>
     public class DeviceManager
     {
-        private static DeviceClient deviceClient;
+        private DeviceClient deviceClient;
         private readonly string iotHubConnectionString;
         private readonly AsyncRetryPolicy retryPolicy;
         private readonly RegistryManager registryManager;
@@ -62,7 +62,7 @@ namespace IotManager.Device
             {
                 deviceClient = DeviceClient.CreateFromConnectionString(deviceConnectionString, Microsoft.Azure.Devices.Client.TransportType.Mqtt_WebSocket_Only);
                 await deviceClient.OpenAsync();
-                await deviceClient.SendEventAsync(new Microsoft.Azure.Devices.Client.Message(Encoding.UTF8.GetBytes($"{deviceId}:Connected!")));
+                await this.SendDeviceMessageAsync("Device connected successfully.");
             });
 
             await retryPolicy.ExecuteAsync(async () =>
@@ -165,7 +165,7 @@ namespace IotManager.Device
         /// メッセージを送信する
         /// </summary>
         /// <param name="message">送信するメッセージ</param>
-        private static async Task SendMessageAsync(string message)
+        private async Task SendMessageAsync(string message)
         {
             var jstTime = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTime.UtcNow, "Tokyo Standard Time");
             var messageObject = new { message = $"{message}" };
