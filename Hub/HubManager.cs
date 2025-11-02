@@ -39,7 +39,7 @@ namespace IotManager.Hub
         /// </summary>
         public async Task StartEventHubProcessingAsync()
         {
-            if (processorClient is null)
+            if (processorClient is null && !string.IsNullOrWhiteSpace(this.eventHubConnectionString) && !string.IsNullOrWhiteSpace(this.storageConnectionString))
             {
                 var blobContainerName = Utility.Configuration["EventHub:StorageContainerName"] ?? "eventhub-checkpoints";
                 var blobContainerClient = new BlobContainerClient(storageConnectionString, blobContainerName);
@@ -49,9 +49,9 @@ namespace IotManager.Hub
 
                 processorClient.ProcessEventAsync += ProcessEventHandler;
                 processorClient.ProcessErrorAsync += ProcessErrorHandler;
-            }
 
-            await processorClient.StartProcessingAsync();
+                await processorClient.StartProcessingAsync();
+            }
         }
 
         /// <summary>
