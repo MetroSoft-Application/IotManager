@@ -58,6 +58,7 @@
             rtxtHubSend = new RichTextBox();
             groupBox6 = new GroupBox();
             rtxtHubReceive = new RichTextBox();
+            btnDeviceTwin = new Button();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
             splitContainer1.Panel1.SuspendLayout();
             splitContainer1.Panel2.SuspendLayout();
@@ -254,6 +255,7 @@
             // 
             // splitContainer4.Panel1
             // 
+            splitContainer4.Panel1.Controls.Add(btnDeviceTwin);
             splitContainer4.Panel1.Controls.Add(btnDirectMethod);
             splitContainer4.Panel1.Controls.Add(txtDirectMethod);
             splitContainer4.Panel1.Controls.Add(label5);
@@ -277,7 +279,7 @@
             // 
             btnDirectMethod.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             btnDirectMethod.Enabled = false;
-            btnDirectMethod.Location = new Point(408, 83);
+            btnDirectMethod.Location = new Point(408, 55);
             btnDirectMethod.Name = "btnDirectMethod";
             btnDirectMethod.Size = new Size(75, 23);
             btnDirectMethod.TabIndex = 11;
@@ -434,6 +436,18 @@
             rtxtHubReceive.TabIndex = 0;
             rtxtHubReceive.Text = "";
             // 
+            // btnDeviceTwin
+            // 
+            btnDeviceTwin.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            btnDeviceTwin.Enabled = false;
+            btnDeviceTwin.Location = new Point(408, 81);
+            btnDeviceTwin.Name = "btnDeviceTwin";
+            btnDeviceTwin.Size = new Size(75, 23);
+            btnDeviceTwin.TabIndex = 12;
+            btnDeviceTwin.Text = "Twin";
+            btnDeviceTwin.UseVisualStyleBackColor = true;
+            btnDeviceTwin.Click += button1_Click;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
@@ -506,5 +520,6 @@
         private TextBox txtDirectMethod;
         private Label label5;
         private Button btnDirectMethod;
+        private Button btnDeviceTwin;
     }
 }

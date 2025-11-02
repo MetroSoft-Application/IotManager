@@ -152,6 +152,7 @@ namespace IotManager
                     btnHubOpen.Text = "Open";
                     btnHubSend.Enabled = false;
                     btnDirectMethod.Enabled = false;
+                    btnDeviceTwin.Enabled = false;
                     isIotHubOpen = false;
                     return;
                 }
@@ -162,6 +163,7 @@ namespace IotManager
                 btnHubOpen.Text = "Close";
                 btnHubSend.Enabled = true;
                 btnDirectMethod.Enabled = true;
+                btnDeviceTwin.Enabled = true;
             }
             catch (Exception ex)
             {
@@ -306,6 +308,13 @@ namespace IotManager
             {
                 MessageBox.Show($"メソッド呼び出し失敗: {ex.Message}");
             }
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            // FormDeviceTwinを表示
+            var formDeviceTwin = new FormDeviceTwin(txtIotHubConnectionString.Text);
+            formDeviceTwin.Show();
         }
     }
 }
