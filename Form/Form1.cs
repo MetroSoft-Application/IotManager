@@ -212,7 +212,7 @@ namespace IotManager
 
                 if (isDeviceOpen)
                 {
-                    await deviceManager.CloseDeviceAsync();
+                    await deviceManager.CloseDeviceAsync(deviceId);
                     btnDevicerOpen.Text = "Open";
                     btnDeviceSend.Enabled = false;
                     cmbDeviceId.Enabled = true;
@@ -242,7 +242,8 @@ namespace IotManager
         {
             try
             {
-                await deviceManager.SendDeviceMessageAsync(rtxtDeviceSend.Text);
+                var deviceId = cmbDeviceId.SelectedItem.ToString();
+                await deviceManager.SendDeviceMessageAsync(deviceId, rtxtDeviceSend.Text);
                 MessageBox.Show("メッセージ送信完了");
             }
             catch (Exception ex)

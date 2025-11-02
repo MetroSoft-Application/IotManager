@@ -2,7 +2,6 @@ using System.Text;
 using System.Text.Json;
 using Microsoft.Azure.Devices;
 using Microsoft.Azure.Devices.Client;
-using Microsoft.Azure.Devices.Shared;
 using Polly;
 using Polly.Retry;
 
@@ -13,11 +12,11 @@ namespace IotManager.Device
     /// </summary>
     public class DeviceManager
     {
-        private DeviceClient deviceClient;
+        private readonly Dictionary<string, DeviceClient> deviceClients = new Dictionary<string, DeviceClient>();
+        private readonly Dictionary<string, string> currentDirectMethodNames = new Dictionary<string, string>();
         private readonly string iotHubConnectionString;
         private readonly AsyncRetryPolicy retryPolicy;
         private readonly RegistryManager registryManager;
-        private string currentDirectMethodName = string.Empty;
 
         public event Func<string, Task> OnMessageReceived;
         public event Func<string, Task> OnDirectMethodReceived;
@@ -60,40 +59,45 @@ namespace IotManager.Device
 
             await retryPolicy.ExecuteAsync(async () =>
             {
-                deviceClient = DeviceClient.CreateFromConnectionString(deviceConnectionString, Microsoft.Azure.Devices.Client.TransportType.Mqtt_WebSocket_Only);
-                await deviceClient.OpenAsync();
-                await this.SendDeviceMessageAsync("Device connected successfully.");
+                var client = DeviceClient.CreateFromConnectionString(deviceConnectionString, Microsoft.Azure.Devices.Client.TransportType.Mqtt_WebSocket_Only);
+                await client.OpenAsync();
+                deviceClients[deviceId] = client;
+                await this.SendDeviceMessageAsync(deviceId, "Device connected successfully.");
             });
 
             await retryPolicy.ExecuteAsync(async () =>
             {
-                await deviceClient.SetReceiveMessageHandlerAsync(OnDeviceMessageReceived, null);
+                await deviceClients[deviceId].SetReceiveMessageHandlerAsync(async (msg, ctx) => await OnDeviceMessageReceived(deviceId, msg, ctx), null);
             });
         }
 
         /// <summary>
         /// デバイスを閉じる
         /// </summary>
-        public async Task CloseDeviceAsync()
+        /// <param name="deviceId">閉じるデバイスのID</param>
+        public async Task CloseDeviceAsync(string deviceId)
         {
-            if (deviceClient != null)
+            if (deviceClients.TryGetValue(deviceId, out var client))
             {
                 await retryPolicy.ExecuteAsync(async () =>
                 {
-                    await deviceClient.CloseAsync();
+                    await client.CloseAsync();
                 });
+                deviceClients.Remove(deviceId);
+                currentDirectMethodNames.Remove(deviceId);
             }
         }
 
         /// <summary>
         /// デバイスにメッセージを送信
         /// </summary>
+        /// <param name="deviceId">対象デバイスのID</param>
         /// <param name="message">送信するメッセージ本文</param>
-        public async Task SendDeviceMessageAsync(string message)
+        public async Task SendDeviceMessageAsync(string deviceId, string message)
         {
             await retryPolicy.ExecuteAsync(async () =>
             {
-                await SendMessageAsync(message);
+                await SendMessageAsync(deviceId, message);
             });
         }
 
@@ -105,15 +109,20 @@ namespace IotManager.Device
         /// <param name="payload">メソッドに渡すJSON形式のペイロード</param>
         public async Task<CloudToDeviceMethodResult> InvokeDirectMethodAsync(string deviceId, string methodName, string payload)
         {
-            // 既存のハンドラを削除
-            if (!string.IsNullOrEmpty(currentDirectMethodName))
+            if (!deviceClients.TryGetValue(deviceId, out var client))
             {
-                await deviceClient.SetMethodHandlerAsync(currentDirectMethodName, null, null);
+                throw new InvalidOperationException($"Device {deviceId} is not connected.");
+            }
+
+            // 既存のハンドラを削除
+            if (currentDirectMethodNames.TryGetValue(deviceId, out var currentMethodName) && !string.IsNullOrEmpty(currentMethodName))
+            {
+                await client.SetMethodHandlerAsync(currentMethodName, null, null);
             }
 
             // 新しいハンドラを設定
-            await deviceClient.SetMethodHandlerAsync(methodName, DeviceMethodCallback, null);
-            currentDirectMethodName = methodName;
+            await client.SetMethodHandlerAsync(methodName, async (req, ctx) => await DeviceMethodCallback(deviceId, req, ctx), null);
+            currentDirectMethodNames[deviceId] = methodName;
 
             // ダイレクトメソッドを呼び出す
             var methodInvocation = new CloudToDeviceMethod(methodName) { ResponseTimeout = TimeSpan.FromSeconds(30) };
@@ -126,35 +135,39 @@ namespace IotManager.Device
         /// <summary>
         /// デバイスからのメッセージを受信したときの処理
         /// </summary>
+        /// <param name="deviceId">デバイスID</param>
         /// <param name="receivedMessage">受信したメッセージ</param>
         /// <param name="userContext">ユーザーコンテキスト</param>
-        private async Task OnDeviceMessageReceived(Microsoft.Azure.Devices.Client.Message receivedMessage, object userContext)
+        private async Task OnDeviceMessageReceived(string deviceId, Microsoft.Azure.Devices.Client.Message receivedMessage, object userContext)
         {
             var messageText = Encoding.UTF8.GetString(receivedMessage.GetBytes());
             var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
 
             if (OnMessageReceived != null)
             {
-                await OnMessageReceived($"[Message][{timestamp}] {messageText}");
+                await OnMessageReceived($"[{deviceId}][Message][{timestamp}] {messageText}");
             }
 
-            await deviceClient.CompleteAsync(receivedMessage);
+            if (deviceClients.TryGetValue(deviceId, out var client))
+            {
+                await client.CompleteAsync(receivedMessage);
+            }
         }
 
         /// <summary>
         /// ダイレクトメソッドのコールバック処理
         /// </summary>
+        /// <param name="deviceId">デバイスID</param>
         /// <param name="methodRequest">メソッドリクエスト</param>
         /// <param name="userContext">ユーザーコンテキスト</param>
-        private async Task<MethodResponse> DeviceMethodCallback(MethodRequest methodRequest, object userContext)
+        private async Task<MethodResponse> DeviceMethodCallback(string deviceId, MethodRequest methodRequest, object userContext)
         {
-            await Task.Delay(0);
             var payload = methodRequest.DataAsJson;
             var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
 
             if (OnDirectMethodReceived != null)
             {
-                await OnDirectMethodReceived($"[DirectMethod][{timestamp}] {payload}");
+                await OnDirectMethodReceived($"[{deviceId}][DirectMethod][{timestamp}] {payload}");
             }
 
             var responseBytes = Encoding.UTF8.GetBytes(payload);
@@ -164,9 +177,15 @@ namespace IotManager.Device
         /// <summary>
         /// メッセージを送信する
         /// </summary>
+        /// <param name="deviceId">デバイスID</param>
         /// <param name="message">送信するメッセージ</param>
-        private async Task SendMessageAsync(string message)
+        private async Task SendMessageAsync(string deviceId, string message)
         {
+            if (!deviceClients.TryGetValue(deviceId, out var client))
+            {
+                throw new InvalidOperationException($"Device {deviceId} is not connected.");
+            }
+
             var jstTime = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTime.UtcNow, "Tokyo Standard Time");
             var messageObject = new { message = $"{message}" };
             var jsonMessage = JsonSerializer.Serialize(messageObject);
@@ -178,7 +197,7 @@ namespace IotManager.Device
             messageToSend.Properties.Add("insertJstTime", jstTime.ToString("o"));
             messageToSend.MessageId = Guid.NewGuid().ToString();
 
-            await deviceClient.SendEventAsync(messageToSend);
+            await client.SendEventAsync(messageToSend);
         }
     }
 }
