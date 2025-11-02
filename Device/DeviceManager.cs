@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using System.Text.Json;
 using Microsoft.Azure.Devices;
 using Microsoft.Azure.Devices.Client;
@@ -32,7 +32,7 @@ namespace IotManager.Device
 
             retryPolicy = Policy
                 .Handle<Exception>()
-                .WaitAndRetryAsync(3, retryAttempt => TimeSpan.FromSeconds(2));
+                .WaitAndRetryAsync(5, retryAttempt => TimeSpan.FromSeconds(2));
 
             registryManager = RegistryManager.CreateFromConnectionString(iotHubConnectionString);
         }
@@ -62,6 +62,7 @@ namespace IotManager.Device
             {
                 deviceClient = DeviceClient.CreateFromConnectionString(deviceConnectionString, Microsoft.Azure.Devices.Client.TransportType.Mqtt_WebSocket_Only);
                 await deviceClient.OpenAsync();
+                await deviceClient.SendEventAsync(new Microsoft.Azure.Devices.Client.Message(Encoding.UTF8.GetBytes($"{deviceId}:Connected!")));
             });
 
             await retryPolicy.ExecuteAsync(async () =>
