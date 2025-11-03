@@ -64,7 +64,7 @@
             // 
             splitContainer1.Panel2.Controls.Add(splitContainer2);
             splitContainer1.Size = new Size(1187, 581);
-            splitContainer1.SplitterDistance = 234;
+            splitContainer1.SplitterDistance = 246;
             splitContainer1.TabIndex = 1;
             // 
             // btnExec
@@ -102,6 +102,7 @@
             txtSQL.Cursor = Cursors.IBeam;
             txtSQL.DefaultMarkerSize = 8;
             txtSQL.DisabledColor = Color.FromArgb(100, 180, 180, 180);
+            txtSQL.Font = new Font("Courier New", 9.75F, FontStyle.Regular, GraphicsUnit.Point);
             txtSQL.IsReplaceMode = false;
             txtSQL.LeftBracket = '(';
             txtSQL.LeftBracket2 = '{';
@@ -112,7 +113,7 @@
             txtSQL.RightBracket2 = '}';
             txtSQL.SelectionColor = Color.FromArgb(60, 0, 0, 255);
             txtSQL.ServiceColors = null;
-            txtSQL.Size = new Size(1111, 212);
+            txtSQL.Size = new Size(1111, 224);
             txtSQL.TabIndex = 1;
             txtSQL.Zoom = 100;
             // 
@@ -129,7 +130,7 @@
             // splitContainer2.Panel2
             // 
             splitContainer2.Panel2.Controls.Add(txtTwinStatus);
-            splitContainer2.Size = new Size(1187, 343);
+            splitContainer2.Size = new Size(1187, 331);
             splitContainer2.SplitterDistance = 624;
             splitContainer2.TabIndex = 3;
             // 
@@ -142,7 +143,7 @@
             dgvDeviceTwin.ReadOnly = true;
             dgvDeviceTwin.RowHeadersVisible = false;
             dgvDeviceTwin.RowTemplate.Height = 25;
-            dgvDeviceTwin.Size = new Size(605, 340);
+            dgvDeviceTwin.Size = new Size(605, 328);
             dgvDeviceTwin.TabIndex = 0;
             // 
             // txtTwinStatus
@@ -169,7 +170,6 @@
             txtTwinStatus.Cursor = Cursors.IBeam;
             txtTwinStatus.DefaultMarkerSize = 8;
             txtTwinStatus.DisabledColor = Color.FromArgb(100, 180, 180, 180);
-            txtTwinStatus.Font = new Font("Courier New", 9.75F, FontStyle.Regular, GraphicsUnit.Point);
             txtTwinStatus.IsReplaceMode = false;
             txtTwinStatus.LeftBracket = '(';
             txtTwinStatus.LeftBracket2 = '{';
@@ -181,7 +181,7 @@
             txtTwinStatus.RightBracket2 = '}';
             txtTwinStatus.SelectionColor = Color.FromArgb(60, 0, 0, 255);
             txtTwinStatus.ServiceColors = null;
-            txtTwinStatus.Size = new Size(547, 340);
+            txtTwinStatus.Size = new Size(547, 328);
             txtTwinStatus.TabIndex = 3;
             txtTwinStatus.Zoom = 100;
             // 

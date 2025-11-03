@@ -42,8 +42,9 @@ namespace IotManager.Form
             dataGridView1.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             dataGridView1.Location = new Point(12, 41);
             dataGridView1.Name = "dataGridView1";
+            dataGridView1.RowHeadersVisible = false;
             dataGridView1.RowTemplate.Height = 25;
-            dataGridView1.Size = new Size(343, 397);
+            dataGridView1.Size = new Size(385, 397);
             dataGridView1.TabIndex = 0;
             // 
             // btnLoad
@@ -58,7 +59,7 @@ namespace IotManager.Form
             // btnExec
             // 
             btnExec.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            btnExec.Location = new Point(280, 12);
+            btnExec.Location = new Point(322, 12);
             btnExec.Name = "btnExec";
             btnExec.Size = new Size(75, 23);
             btnExec.TabIndex = 2;
@@ -69,7 +70,7 @@ namespace IotManager.Form
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(367, 450);
+            ClientSize = new Size(409, 450);
             Controls.Add(btnExec);
             Controls.Add(btnLoad);
             Controls.Add(dataGridView1);

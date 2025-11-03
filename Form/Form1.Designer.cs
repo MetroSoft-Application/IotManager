@@ -60,7 +60,6 @@
             rtxtHubSend = new RichTextBox();
             groupBox6 = new GroupBox();
             rtxtHubReceive = new RichTextBox();
-            btnManager = new Button();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
             splitContainer1.Panel1.SuspendLayout();
             splitContainer1.Panel2.SuspendLayout();
@@ -126,7 +125,6 @@
             // 
             // splitContainer2.Panel1
             // 
-            splitContainer2.Panel1.Controls.Add(btnManager);
             splitContainer2.Panel1.Controls.Add(btnDeviceRegister);
             splitContainer2.Panel1.Controls.Add(btnDeviceSend);
             splitContainer2.Panel1.Controls.Add(btnDevicerOpen);
@@ -463,16 +461,6 @@
             rtxtHubReceive.TabIndex = 0;
             rtxtHubReceive.Text = "";
             // 
-            // btnManager
-            // 
-            btnManager.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            btnManager.Location = new Point(377, 55);
-            btnManager.Name = "btnManager";
-            btnManager.Size = new Size(75, 23);
-            btnManager.TabIndex = 6;
-            btnManager.Text = "Register";
-            btnManager.UseVisualStyleBackColor = true;
-            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
@@ -547,6 +535,5 @@
         private Button btnDirectMethod;
         private Button btnDeviceTwin;
         private Button btnDeviceRegister;
-        private Button btnManager;
     }
 }
