@@ -57,7 +57,7 @@
             // 
             splitContainer1.Panel2.Controls.Add(txtTwinStatus);
             splitContainer1.Size = new Size(727, 572);
-            splitContainer1.SplitterDistance = 191;
+            splitContainer1.SplitterDistance = 228;
             splitContainer1.TabIndex = 1;
             // 
             // btnExec
@@ -87,11 +87,13 @@
     '\'',
     '\''
     };
+            txtSQL.AutoIndentCharsPatterns = "^\\s*[\\w\\.]+(\\s\\w+)?\\s*(?<range>=)\\s*(?<range>[^;=]+);\r\n^\\s*(case|default)\\s*[^:]*(?<range>:)\\s*(?<range>[^;]+);";
             txtSQL.AutoScrollMinSize = new Size(27, 14);
             txtSQL.BackBrush = null;
             txtSQL.CharHeight = 14;
             txtSQL.CharWidth = 8;
             txtSQL.Cursor = Cursors.IBeam;
+            txtSQL.DefaultMarkerSize = 8;
             txtSQL.DisabledColor = Color.FromArgb(100, 180, 180, 180);
             txtSQL.Font = new Font("Courier New", 9.75F, FontStyle.Regular, GraphicsUnit.Point);
             txtSQL.IsReplaceMode = false;
@@ -104,7 +106,7 @@
             txtSQL.RightBracket2 = '}';
             txtSQL.SelectionColor = Color.FromArgb(60, 0, 0, 255);
             txtSQL.ServiceColors = null;
-            txtSQL.Size = new Size(649, 185);
+            txtSQL.Size = new Size(649, 222);
             txtSQL.TabIndex = 1;
             txtSQL.Zoom = 100;
             // 
@@ -124,11 +126,13 @@
     '\'',
     '\''
     };
+            txtTwinStatus.AutoIndentCharsPatterns = "^\\s*[\\w\\.]+(\\s\\w+)?\\s*(?<range>=)\\s*(?<range>[^;=]+);\r\n^\\s*(case|default)\\s*[^:]*(?<range>:)\\s*(?<range>[^;]+);";
             txtTwinStatus.AutoScrollMinSize = new Size(27, 14);
             txtTwinStatus.BackBrush = null;
             txtTwinStatus.CharHeight = 14;
             txtTwinStatus.CharWidth = 8;
             txtTwinStatus.Cursor = Cursors.IBeam;
+            txtTwinStatus.DefaultMarkerSize = 8;
             txtTwinStatus.DisabledColor = Color.FromArgb(100, 180, 180, 180);
             txtTwinStatus.Font = new Font("Courier New", 9.75F, FontStyle.Regular, GraphicsUnit.Point);
             txtTwinStatus.IsReplaceMode = false;
@@ -142,7 +146,7 @@
             txtTwinStatus.RightBracket2 = '}';
             txtTwinStatus.SelectionColor = Color.FromArgb(60, 0, 0, 255);
             txtTwinStatus.ServiceColors = null;
-            txtTwinStatus.Size = new Size(721, 365);
+            txtTwinStatus.Size = new Size(721, 328);
             txtTwinStatus.TabIndex = 2;
             txtTwinStatus.Zoom = 100;
             // 

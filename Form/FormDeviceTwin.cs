@@ -1,13 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
-using Microsoft.Azure.Devices;
+﻿using Microsoft.Azure.Devices;
 using Newtonsoft.Json;
 using FastColoredTextBoxNS;
 using System.Text.RegularExpressions;
@@ -28,6 +19,7 @@ namespace IotManager
         // SQLシンタックスハイライト用のスタイル
         private TextStyle sqlStringStyle = new TextStyle(Brushes.Red, null, FontStyle.Regular);
         private TextStyle sqlFunctionStyle = new TextStyle(Brushes.Magenta, null, FontStyle.Regular);
+        private TextStyle sqlCommentStyle = new TextStyle(Brushes.Green, null, FontStyle.Italic);
 
         public FormDeviceTwin(string connectionString)
         {
@@ -51,6 +43,8 @@ namespace IotManager
     , properties.reported
 FROM
     devices
+--WHERE
+    --devices.deviceId = ''
 ";
 
             // JSONシンタックスハイライトのイベントハンドラを設定
@@ -63,7 +57,10 @@ FROM
         private void TxtSQL_TextChanged(object sender, TextChangedEventArgs e)
         {
             // SQLシンタックスハイライトを適用
-            e.ChangedRange.ClearStyle(sqlStringStyle, sqlFunctionStyle);
+            e.ChangedRange.ClearStyle(sqlStringStyle, sqlFunctionStyle, sqlCommentStyle);
+
+            // コメント (--以降)
+            e.ChangedRange.SetStyle(sqlCommentStyle, @"--.*$", RegexOptions.Multiline);
 
             // 文字列
             e.ChangedRange.SetStyle(sqlStringStyle, @"'[^']*'");
@@ -90,6 +87,42 @@ FROM
             e.ChangedRange.SetStyle(keywordStyle, @"[{}[\]:]");
         }
 
+        /// <summary>
+        /// SQLクエリから--以降のコメントを除去
+        /// </summary>
+        /// <param name="sqlQuery">元のSQLクエリ</param>
+        /// <returns>コメントを除去したSQLクエリ</returns>
+        private string RemoveComments(string sqlQuery)
+        {
+            var lines = sqlQuery.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
+            var processedLines = new List<string>();
+
+            foreach (var line in lines)
+            {
+                // --の位置を探す
+                var commentIndex = line.IndexOf("--");
+                if (commentIndex >= 0)
+                {
+                    // --より前の部分のみを取得
+                    var lineWithoutComment = line.Substring(0, commentIndex).TrimEnd();
+                    if (!string.IsNullOrWhiteSpace(lineWithoutComment))
+                    {
+                        processedLines.Add(lineWithoutComment);
+                    }
+                }
+                else
+                {
+                    // コメントがない行はそのまま追加
+                    if (!string.IsNullOrWhiteSpace(line))
+                    {
+                        processedLines.Add(line);
+                    }
+                }
+            }
+
+            return string.Join(" ", processedLines);
+        }
+
         private async void Exec_Click(object sender, EventArgs e)
         {
             try
@@ -102,6 +135,9 @@ FROM
                     MessageBox.Show("SQLクエリを入力してください。", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
+
+                // コメント行を除去(--以降をコメントとして処理)
+                sqlQuery = RemoveComments(sqlQuery);
 
                 // Device Twin クエリを実行
                 var query = registryManager.CreateQuery(sqlQuery);
