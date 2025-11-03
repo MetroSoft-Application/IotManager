@@ -1,7 +1,9 @@
 ﻿using Microsoft.Azure.Devices;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using FastColoredTextBoxNS;
 using System.Text.RegularExpressions;
+using System.Data;
 
 namespace IotManager
 {
@@ -9,6 +11,7 @@ namespace IotManager
     {
         private readonly string iotHubConnectionString;
         private RegistryManager registryManager;
+        private DataTable twinDataTable;
 
         // JSONシンタックスハイライト用のスタイル
         private TextStyle keywordStyle = new TextStyle(Brushes.Blue, null, FontStyle.Regular);
@@ -27,6 +30,10 @@ namespace IotManager
             iotHubConnectionString = connectionString;
             registryManager = RegistryManager.CreateFromConnectionString(iotHubConnectionString);
             txtSQL.Language = Language.SQL;
+
+            // DataTableの初期化
+            twinDataTable = new DataTable();
+            dgvDeviceTwin.DataSource = twinDataTable;
 
             // デフォルトのSQLクエリを設定
             txtSQL.Text =
@@ -128,6 +135,8 @@ FROM
             try
             {
                 txtTwinStatus.Clear();
+                twinDataTable.Clear();
+                twinDataTable.Columns.Clear();
 
                 var sqlQuery = txtSQL.Text.Trim();
                 if (string.IsNullOrEmpty(sqlQuery))
@@ -141,23 +150,169 @@ FROM
 
                 // Device Twin クエリを実行
                 var query = registryManager.CreateQuery(sqlQuery);
+                var allResults = new List<JObject>();
 
                 while (query.HasMoreResults)
                 {
                     var page = await query.GetNextAsJsonAsync();
                     foreach (var twin in page)
                     {
+                        var jObject = JObject.Parse(twin);
+                        allResults.Add(jObject);
+
                         // JSONを整形して表示
-                        var formattedJson = JsonConvert.SerializeObject(JsonConvert.DeserializeObject(twin), Formatting.Indented);
+                        var formattedJson = JsonConvert.SerializeObject(jObject, Formatting.Indented);
                         txtTwinStatus.AppendText(formattedJson);
                         txtTwinStatus.AppendText("\r\n");
                     }
+                }
+
+                // DataGridViewにマッピング
+                if (allResults.Count > 0)
+                {
+                    MapJsonToDataTable(allResults);
                 }
             }
             catch (Exception ex)
             {
                 txtTwinStatus.Clear();
                 txtTwinStatus.AppendText($"エラー:\r\n{ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// JSON結果をDataTableに自動マッピング
+        /// </summary>
+        private void MapJsonToDataTable(List<JObject> jsonObjects)
+        {
+            if (jsonObjects == null || jsonObjects.Count == 0)
+                return;
+
+            // 優先順位付きカラム定義
+            var priorityColumns = new List<string>
+            {
+                "deviceId",
+                "etag",
+                "deviceEtag",
+                "status",
+                "statusUpdateTime",
+                "connectionState",
+                "lastActivityTime",
+                "cloudToDeviceMessageCount",
+                "authenticationType",
+                "x509Thumbprint",
+                "modelId",
+                "version",
+                "properties",
+                "capabilities"
+            };
+
+            // すべてのJSONオブジェクトからユニークなプロパティを収集
+            var allProperties = new HashSet<string>();
+            foreach (var jObj in jsonObjects)
+            {
+                FlattenJson(jObj, "", allProperties);
+            }
+
+            // カラムを優先順位に従って作成
+            var orderedProperties = new List<string>();
+
+            // 優先カラムを先に追加
+            foreach (var priorityCol in priorityColumns)
+            {
+                var matchingProps = allProperties.Where(p => p.Equals(priorityCol, StringComparison.OrdinalIgnoreCase) || p.StartsWith(priorityCol + ".", StringComparison.OrdinalIgnoreCase)).OrderBy(p => p).ToList();
+                foreach (var prop in matchingProps)
+                {
+                    if (!orderedProperties.Contains(prop))
+                    {
+                        orderedProperties.Add(prop);
+                    }
+                }
+            }
+
+            // 残りのカラムを最後尾に追加
+            foreach (var prop in allProperties.OrderBy(p => p))
+            {
+                if (!orderedProperties.Contains(prop))
+                {
+                    orderedProperties.Add(prop);
+                }
+            }
+
+            // DataTableにカラムを追加
+            foreach (var property in orderedProperties)
+            {
+                twinDataTable.Columns.Add(property, typeof(string));
+            }
+
+            // データ行を追加
+            foreach (var jObj in jsonObjects)
+            {
+                var row = twinDataTable.NewRow();
+                var flatData = new Dictionary<string, string>();
+                FlattenJsonToDict(jObj, "", flatData);
+
+                foreach (var kvp in flatData)
+                {
+                    if (twinDataTable.Columns.Contains(kvp.Key))
+                    {
+                        row[kvp.Key] = kvp.Value;
+                    }
+                }
+
+                twinDataTable.Rows.Add(row);
+            }
+        }
+
+        /// <summary>
+        /// JSONをフラット化してプロパティ名を収集
+        /// </summary>
+        private void FlattenJson(JToken token, string prefix, HashSet<string> properties)
+        {
+            if (token is JObject jObject)
+            {
+                foreach (var property in jObject.Properties())
+                {
+                    var propertyName = string.IsNullOrEmpty(prefix) ? property.Name : $"{prefix}.{property.Name}";
+
+                    if (property.Value is JObject || property.Value is JArray)
+                    {
+                        // ネストされたオブジェクトや配列は文字列として扱う
+                        properties.Add(propertyName);
+                    }
+                    else
+                    {
+                        properties.Add(propertyName);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// JSONをフラット化して辞書に格納
+        /// </summary>
+        private void FlattenJsonToDict(JToken token, string prefix, Dictionary<string, string> result)
+        {
+            if (token is JObject jObject)
+            {
+                foreach (var property in jObject.Properties())
+                {
+                    var propertyName = string.IsNullOrEmpty(prefix) ? property.Name : $"{prefix}.{property.Name}";
+
+                    if (property.Value is JObject || property.Value is JArray)
+                    {
+                        // ネストされたオブジェクトや配列は文字列として表示
+                        result[propertyName] = property.Value.ToString(Formatting.None);
+                    }
+                    else if (property.Value.Type == JTokenType.Null)
+                    {
+                        result[propertyName] = "";
+                    }
+                    else
+                    {
+                        result[propertyName] = property.Value.ToString();
+                    }
+                }
             }
         }
 

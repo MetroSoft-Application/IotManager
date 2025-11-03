@@ -31,6 +31,7 @@
             splitContainer1 = new SplitContainer();
             groupBox1 = new GroupBox();
             splitContainer2 = new SplitContainer();
+            btnDeviceRegister = new Button();
             btnDeviceSend = new Button();
             btnDevicerOpen = new Button();
             cmbDeviceId = new ComboBox();
@@ -59,7 +60,7 @@
             rtxtHubSend = new RichTextBox();
             groupBox6 = new GroupBox();
             rtxtHubReceive = new RichTextBox();
-            btnDeviceRegister = new Button();
+            btnManager = new Button();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
             splitContainer1.Panel1.SuspendLayout();
             splitContainer1.Panel2.SuspendLayout();
@@ -125,6 +126,7 @@
             // 
             // splitContainer2.Panel1
             // 
+            splitContainer2.Panel1.Controls.Add(btnManager);
             splitContainer2.Panel1.Controls.Add(btnDeviceRegister);
             splitContainer2.Panel1.Controls.Add(btnDeviceSend);
             splitContainer2.Panel1.Controls.Add(btnDevicerOpen);
@@ -137,6 +139,17 @@
             splitContainer2.Size = new Size(455, 567);
             splitContainer2.SplitterDistance = 106;
             splitContainer2.TabIndex = 0;
+            // 
+            // btnDeviceRegister
+            // 
+            btnDeviceRegister.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            btnDeviceRegister.Location = new Point(377, 80);
+            btnDeviceRegister.Name = "btnDeviceRegister";
+            btnDeviceRegister.Size = new Size(75, 23);
+            btnDeviceRegister.TabIndex = 5;
+            btnDeviceRegister.Text = "Register";
+            btnDeviceRegister.UseVisualStyleBackColor = true;
+            btnDeviceRegister.Click += btnDeviceRegister_Click;
             // 
             // btnDeviceSend
             // 
@@ -450,16 +463,15 @@
             rtxtHubReceive.TabIndex = 0;
             rtxtHubReceive.Text = "";
             // 
-            // btnDeviceRegister
+            // btnManager
             // 
-            btnDeviceRegister.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            btnDeviceRegister.Location = new Point(377, 80);
-            btnDeviceRegister.Name = "btnDeviceRegister";
-            btnDeviceRegister.Size = new Size(75, 23);
-            btnDeviceRegister.TabIndex = 5;
-            btnDeviceRegister.Text = "Register";
-            btnDeviceRegister.UseVisualStyleBackColor = true;
-            btnDeviceRegister.Click += btnDeviceRegister_Click;
+            btnManager.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            btnManager.Location = new Point(377, 55);
+            btnManager.Name = "btnManager";
+            btnManager.Size = new Size(75, 23);
+            btnManager.TabIndex = 6;
+            btnManager.Text = "Register";
+            btnManager.UseVisualStyleBackColor = true;
             // 
             // Form1
             // 
@@ -535,5 +547,6 @@
         private Button btnDirectMethod;
         private Button btnDeviceTwin;
         private Button btnDeviceRegister;
+        private Button btnManager;
     }
 }
