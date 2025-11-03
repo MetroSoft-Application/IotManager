@@ -43,13 +43,13 @@ namespace IotManager.Device
         {
             var deviceIds = new List<string>();
             var query = registryManager.CreateQuery("SELECT * FROM devices");
-            
+
             while (query.HasMoreResults)
             {
                 var devices = await query.GetNextAsTwinAsync();
                 deviceIds.AddRange(devices.Select(x => x.DeviceId));
             }
-            
+
             return deviceIds.OrderBy(x => x).ToList();
         }
 
