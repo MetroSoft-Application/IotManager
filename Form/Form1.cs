@@ -1,6 +1,7 @@
 using System.Windows.Forms;
 using IotManager.Device;
 using IotManager.Hub;
+using IotManager.Form;
 using Microsoft.Extensions.Configuration;
 
 namespace IotManager
@@ -8,7 +9,7 @@ namespace IotManager
     /// <summary>
     /// IoTデバイスとIoT Hubの管理を行うフォーム
     /// </summary>
-    public partial class Form1 : Form
+    public partial class Form1 : System.Windows.Forms.Form
     {
         private DeviceManager deviceManager;
         private HubManager hubManager;
@@ -316,6 +317,13 @@ namespace IotManager
             // FormDeviceTwinを表示
             var formDeviceTwin = new FormDeviceTwin(txtIotHubConnectionString.Text);
             formDeviceTwin.Show();
+        }
+
+        private void btnDeviceRegister_Click(object sender, EventArgs e)
+        {
+            // FormRegisterを表示
+            var formRegister = new FormRegister(txtIotHubConnectionString.Text);
+            formRegister.Show();
         }
     }
 }

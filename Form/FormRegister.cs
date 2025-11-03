@@ -1,0 +1,208 @@
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using Microsoft.Azure.Devices;
+
+namespace IotManager.Form
+{
+    public partial class FormRegister : System.Windows.Forms.Form
+    {
+        private readonly string iotHubConnectionString;
+        private RegistryManager registryManager;
+        private DataTable deviceTable;
+
+        public FormRegister(string iotHubConnectionString)
+        {
+            InitializeComponent();
+            this.iotHubConnectionString = iotHubConnectionString;
+            this.registryManager = RegistryManager.CreateFromConnectionString(iotHubConnectionString);
+
+            InitializeDataTable();
+            InitializeEventHandlers();
+        }
+
+        private void InitializeDataTable()
+        {
+            deviceTable = new DataTable();
+            // カラムはCSV/TSV読み込み時に動的に生成
+            dataGridView1.DataSource = deviceTable;
+        }
+
+        private void InitializeEventHandlers()
+        {
+            btnLoad.Click += BtnLoad_Click;
+            btnExec.Click += BtnExec_Click;
+        }
+
+        private async void BtnLoad_Click(object sender, EventArgs e)
+        {
+            using (var openFileDialog = new OpenFileDialog())
+            {
+                openFileDialog.Filter = "CSV Files (*.csv)|*.csv|TSV Files (*.tsv)|*.tsv|All Files (*.*)|*.*";
+                openFileDialog.Title = "Select Device List File";
+
+                if (openFileDialog.ShowDialog() == DialogResult.OK)
+                {
+                    try
+                    {
+                        await LoadDeviceFileAsync(openFileDialog.FileName);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Error loading file: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+            }
+        }
+
+        private async Task LoadDeviceFileAsync(string filePath)
+        {
+            deviceTable.Clear();
+            deviceTable.Columns.Clear();
+
+            var extension = Path.GetExtension(filePath).ToLower();
+            var delimiter = extension == ".tsv" ? '\t' : ',';
+
+            var lines = await File.ReadAllLinesAsync(filePath);
+            if (lines.Length < 2)
+            {
+                MessageBox.Show("File must contain at least a header row and one data row.", "Invalid File", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            // Parse header
+            var headers = lines[0].Split(delimiter).Select(h => h.Trim()).ToArray();
+            var deviceIdIndex = Array.FindIndex(headers, h => h.Equals("DeviceId", StringComparison.OrdinalIgnoreCase));
+            var statusIndex = Array.FindIndex(headers, h => h.Equals("Status", StringComparison.OrdinalIgnoreCase));
+
+            if (deviceIdIndex == -1 || statusIndex == -1)
+            {
+                MessageBox.Show("CSV/TSV must contain 'DeviceId' and 'Status' columns.", "Invalid Format", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            // 動的にカラムを生成
+            deviceTable.Columns.Add("Selected", typeof(bool));
+            foreach (var header in headers)
+            {
+                deviceTable.Columns.Add(header, typeof(string));
+            }
+            deviceTable.Columns.Add("RegistrationStatus", typeof(string));
+
+            // カラム幅設定
+            dataGridView1.Columns["Selected"].Width = 50;
+            if (dataGridView1.Columns.Contains("RegistrationStatus"))
+            {
+                dataGridView1.Columns["RegistrationStatus"].AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+            }
+
+            // Parse data rows
+            for (int i = 1; i < lines.Length; i++)
+            {
+                var values = lines[i].Split(delimiter).Select(v => v.Trim()).ToArray();
+
+                if (values.Length < headers.Length)
+                    continue;
+
+                var deviceId = values[deviceIdIndex];
+                var status = values[statusIndex];
+
+                if (string.IsNullOrWhiteSpace(deviceId))
+                    continue;
+
+                // Validate status
+                if (!status.Equals("Enabled", StringComparison.OrdinalIgnoreCase) &&
+                    !status.Equals("Disabled", StringComparison.OrdinalIgnoreCase))
+                {
+                    MessageBox.Show($"Row {i + 1}: Status must be 'Enabled' or 'Disabled'. Found: '{status}'", "Invalid Data", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    continue;
+                }
+
+                // 行データ作成
+                var row = deviceTable.NewRow();
+                row["Selected"] = true;
+                for (int j = 0; j < headers.Length && j < values.Length; j++)
+                {
+                    row[headers[j]] = values[j];
+                }
+                row["RegistrationStatus"] = "待機中";
+                deviceTable.Rows.Add(row);
+            }
+
+            MessageBox.Show($"Loaded {deviceTable.Rows.Count} devices.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        private async void BtnExec_Click(object sender, EventArgs e)
+        {
+            var selectedRows = deviceTable.AsEnumerable().Where(row => row.Field<bool>("Selected")).ToList();
+
+            if (selectedRows.Count == 0)
+            {
+                MessageBox.Show("No devices selected.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            btnExec.Enabled = false;
+            btnLoad.Enabled = false;
+
+            try
+            {
+                int successCount = 0;
+                int failureCount = 0;
+
+                foreach (var row in selectedRows)
+                {
+                    var deviceId = row.Field<string>("DeviceId");
+                    var status = row.Field<string>("Status");
+
+                    try
+                    {
+                        var device = new Microsoft.Azure.Devices.Device(deviceId)
+                        {
+                            Status = status.Equals("Enabled", StringComparison.OrdinalIgnoreCase)
+                                ? DeviceStatus.Enabled
+                                : DeviceStatus.Disabled
+                        };
+
+                        await registryManager.AddDeviceAsync(device);
+                        row.SetField("RegistrationStatus", "✓ 成功");
+                        successCount++;
+                    }
+                    catch (Exception ex)
+                    {
+                        row.SetField("RegistrationStatus", $"✗ 失敗: {ex.Message}");
+                        failureCount++;
+                    }
+
+                    dataGridView1.Refresh();
+                    await Task.Delay(100); // Rate limiting
+                }
+
+                MessageBox.Show($"Registration completed.\nSuccess: {successCount}\nFailed: {failureCount}",
+                    "Result", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            finally
+            {
+                btnExec.Enabled = true;
+                btnLoad.Enabled = true;
+            }
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                components?.Dispose();
+                registryManager?.Dispose();
+            }
+            base.Dispose(disposing);
+        }
+    }
+}

@@ -5,7 +5,7 @@ using System.Text.RegularExpressions;
 
 namespace IotManager
 {
-    public partial class FormDeviceTwin : Form
+    public partial class FormDeviceTwin : System.Windows.Forms.Form
     {
         private readonly string iotHubConnectionString;
         private RegistryManager registryManager;

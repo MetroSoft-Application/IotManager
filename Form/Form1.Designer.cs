@@ -42,6 +42,7 @@
             rtxtDeviceReceive = new RichTextBox();
             groupBox2 = new GroupBox();
             splitContainer4 = new SplitContainer();
+            btnDeviceTwin = new Button();
             btnDirectMethod = new Button();
             txtDirectMethod = new TextBox();
             label5 = new Label();
@@ -58,7 +59,7 @@
             rtxtHubSend = new RichTextBox();
             groupBox6 = new GroupBox();
             rtxtHubReceive = new RichTextBox();
-            btnDeviceTwin = new Button();
+            btnDeviceRegister = new Button();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
             splitContainer1.Panel1.SuspendLayout();
             splitContainer1.Panel2.SuspendLayout();
@@ -124,6 +125,7 @@
             // 
             // splitContainer2.Panel1
             // 
+            splitContainer2.Panel1.Controls.Add(btnDeviceRegister);
             splitContainer2.Panel1.Controls.Add(btnDeviceSend);
             splitContainer2.Panel1.Controls.Add(btnDevicerOpen);
             splitContainer2.Panel1.Controls.Add(cmbDeviceId);
@@ -274,6 +276,18 @@
             splitContainer4.Size = new Size(486, 567);
             splitContainer4.SplitterDistance = 106;
             splitContainer4.TabIndex = 0;
+            // 
+            // btnDeviceTwin
+            // 
+            btnDeviceTwin.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            btnDeviceTwin.Enabled = false;
+            btnDeviceTwin.Location = new Point(408, 81);
+            btnDeviceTwin.Name = "btnDeviceTwin";
+            btnDeviceTwin.Size = new Size(75, 23);
+            btnDeviceTwin.TabIndex = 12;
+            btnDeviceTwin.Text = "Twin";
+            btnDeviceTwin.UseVisualStyleBackColor = true;
+            btnDeviceTwin.Click += button1_Click;
             // 
             // btnDirectMethod
             // 
@@ -436,17 +450,16 @@
             rtxtHubReceive.TabIndex = 0;
             rtxtHubReceive.Text = "";
             // 
-            // btnDeviceTwin
+            // btnDeviceRegister
             // 
-            btnDeviceTwin.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            btnDeviceTwin.Enabled = false;
-            btnDeviceTwin.Location = new Point(408, 81);
-            btnDeviceTwin.Name = "btnDeviceTwin";
-            btnDeviceTwin.Size = new Size(75, 23);
-            btnDeviceTwin.TabIndex = 12;
-            btnDeviceTwin.Text = "Twin";
-            btnDeviceTwin.UseVisualStyleBackColor = true;
-            btnDeviceTwin.Click += button1_Click;
+            btnDeviceRegister.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            btnDeviceRegister.Location = new Point(377, 80);
+            btnDeviceRegister.Name = "btnDeviceRegister";
+            btnDeviceRegister.Size = new Size(75, 23);
+            btnDeviceRegister.TabIndex = 5;
+            btnDeviceRegister.Text = "Register";
+            btnDeviceRegister.UseVisualStyleBackColor = true;
+            btnDeviceRegister.Click += btnDeviceRegister_Click;
             // 
             // Form1
             // 
@@ -521,5 +534,6 @@
         private Label label5;
         private Button btnDirectMethod;
         private Button btnDeviceTwin;
+        private Button btnDeviceRegister;
     }
 }
