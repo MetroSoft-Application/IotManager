@@ -15,7 +15,6 @@ namespace IotManager.Device
     public class DeviceManager
     {
         private readonly Dictionary<string, DeviceClient> deviceClients = new Dictionary<string, DeviceClient>();
-        private readonly Dictionary<string, string> currentDirectMethodNames = new Dictionary<string, string>();
         private readonly IoTHubSettings settings;
         private readonly AsyncRetryPolicy retryPolicy;
         private readonly RegistryManager registryManager;
@@ -77,6 +76,7 @@ namespace IotManager.Device
             await retryPolicy.ExecuteAsync(async () =>
             {
                 await deviceClients[deviceId].SetReceiveMessageHandlerAsync(async (msg, ctx) => await OnDeviceMessageReceived(deviceId, msg, ctx), null);
+                await deviceClients[deviceId].SetMethodDefaultHandlerAsync(async (req, ctx) => await DeviceMethodCallback(deviceId, req, ctx), null);
             });
         }
 
@@ -93,7 +93,6 @@ namespace IotManager.Device
                     await client.CloseAsync();
                 });
                 deviceClients.Remove(deviceId);
-                currentDirectMethodNames.Remove(deviceId);
             }
         }
 
@@ -111,27 +110,37 @@ namespace IotManager.Device
         }
 
         /// <summary>
-        /// ダイレクトメソッドを設定して呼び出し
+        /// デバイスの接続状態を確認
+        /// </summary>
+        /// <param name="deviceId">対象デバイスのID</param>
+        /// <returns>接続されている場合true</returns>
+        public async Task<bool> IsDeviceConnectedAsync(string deviceId)
+        {
+            try
+            {
+                var twin = await registryManager.GetTwinAsync(deviceId);
+                return twin.ConnectionState == DeviceConnectionState.Connected;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// ダイレクトメソッドを呼び出し
         /// </summary>
         /// <param name="deviceId">対象デバイスのID</param>
         /// <param name="methodName">呼び出すメソッド名</param>
         /// <param name="payload">メソッドに渡すJSON形式のペイロード</param>
         public async Task<CloudToDeviceMethodResult> InvokeDirectMethodAsync(string deviceId, string methodName, string payload)
         {
-            if (!deviceClients.TryGetValue(deviceId, out var client))
+            // デバイスの接続状態を事前確認（注意: 完全にリアルタイムではない）
+            var isConnected = await IsDeviceConnectedAsync(deviceId);
+            if (!isConnected)
             {
-                throw new InvalidOperationException($"Device {deviceId} is not connected.");
+                throw new InvalidOperationException($"Device {deviceId} is not connected to IoT Hub.");
             }
-
-            // 既存のハンドラを削除
-            if (currentDirectMethodNames.TryGetValue(deviceId, out var currentMethodName) && !string.IsNullOrEmpty(currentMethodName))
-            {
-                await client.SetMethodHandlerAsync(currentMethodName, null, null);
-            }
-
-            // 新しいハンドラを設定
-            await client.SetMethodHandlerAsync(methodName, async (req, ctx) => await DeviceMethodCallback(deviceId, req, ctx), null);
-            currentDirectMethodNames[deviceId] = methodName;
 
             // ダイレクトメソッドを呼び出す
             var methodInvocation = new CloudToDeviceMethod(methodName) { ResponseTimeout = TimeSpan.FromSeconds(settings.DirectMethodTimeoutSeconds) };
