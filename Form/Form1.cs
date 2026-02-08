@@ -262,6 +262,54 @@ namespace IotManager
         private async void Form1_Load(object sender, EventArgs e)
         {
             await LoadDeviceIds();
+            LoadDirectMethods();
+        }
+
+        /// <summary>
+        /// ダイレクトメソッド一覧を読み込む
+        /// </summary>
+        private void LoadDirectMethods()
+        {
+            var directMethodsSection = Utility.Configuration.GetSection("DirectMethods");
+            if (directMethodsSection.Exists())
+            {
+                cmbDirectMethod.Items.Clear();
+                foreach (var method in directMethodsSection.GetChildren())
+                {
+                    cmbDirectMethod.Items.Add(method.Key);
+                }
+                if (cmbDirectMethod.Items.Count > 0)
+                {
+                    cmbDirectMethod.SelectedIndex = 0;
+                }
+            }
+        }
+
+        /// <summary>
+        /// 選択されたダイレクトメソッドのサンプルペイロードを取得
+        /// </summary>
+        private string GetSamplePayload(string methodName)
+        {
+            if (string.IsNullOrWhiteSpace(methodName))
+            {
+                return "{}";
+            }
+
+            var samplePayload = Utility.Configuration.GetSection($"DirectMethods:{methodName}:SamplePayload").Value;
+            return samplePayload ?? "{}";
+        }
+
+        /// <summary>
+        /// ダイレクトメソッド選択変更時の処理
+        /// </summary>
+        private void cmbDirectMethod_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (cmbDirectMethod.SelectedItem != null)
+            {
+                var methodName = cmbDirectMethod.SelectedItem.ToString();
+                var samplePayload = GetSamplePayload(methodName);
+                rtxtHubSend.Text = samplePayload;
+            }
         }
 
         /// <summary>
@@ -286,7 +334,7 @@ namespace IotManager
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(txtDirectMethod.Text))
+                if (string.IsNullOrWhiteSpace(cmbDirectMethod.Text))
                 {
                     return;
                 }
@@ -303,7 +351,7 @@ namespace IotManager
                         return;
                     }
 
-                    var response = await deviceManager.InvokeDirectMethodAsync(deviceId, txtDirectMethod.Text, payload);
+                    var response = await deviceManager.InvokeDirectMethodAsync(deviceId, cmbDirectMethod.Text, payload);
                     MessageBox.Show($"メソッド呼び出し成功: {response.Status}, ペイロード: {response.GetPayloadAsJson()}");
                 }
             }
