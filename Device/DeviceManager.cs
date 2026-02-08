@@ -33,7 +33,7 @@ namespace IotManager.Device
 
             retryPolicy = Policy
                 .Handle<Exception>()
-                .WaitAndRetryAsync(5, retryAttempt => TimeSpan.FromSeconds(2));
+                .WaitAndRetryAsync(settings.RetryCount, retryAttempt => TimeSpan.FromSeconds(settings.RetryDelaySeconds));
 
             registryManager = RegistryManager.CreateFromConnectionString(settings.ConnectionString);
         }
@@ -66,7 +66,9 @@ namespace IotManager.Device
 
             await retryPolicy.ExecuteAsync(async () =>
             {
-                var client = DeviceClient.CreateFromConnectionString(deviceConnectionString, Microsoft.Azure.Devices.Client.TransportType.Mqtt_WebSocket_Only);
+                var transportType = ParseTransportType(settings.TransportType);
+                var client = DeviceClient.CreateFromConnectionString(deviceConnectionString, transportType);
+                client.OperationTimeoutInMilliseconds = (uint)(settings.OperationTimeoutSeconds * 1000);
                 await client.OpenAsync();
                 deviceClients[deviceId] = client;
                 await this.SendDeviceMessageAsync(deviceId, "Device connected successfully.");
@@ -289,6 +291,24 @@ namespace IotManager.Device
             messageToSend.MessageId = Guid.NewGuid().ToString();
 
             await client.SendEventAsync(messageToSend);
+        }
+
+        /// <summary>
+        /// 文字列からTransportTypeを解析
+        /// </summary>
+        /// <param name="transportType">トランスポートタイプ文字列</param>
+        /// <returns>TransportType列挙型</returns>
+        private Microsoft.Azure.Devices.Client.TransportType ParseTransportType(string transportType)
+        {
+            return transportType switch
+            {
+                "Mqtt" => Microsoft.Azure.Devices.Client.TransportType.Mqtt,
+                "Amqp" => Microsoft.Azure.Devices.Client.TransportType.Amqp,
+                "Http1" => Microsoft.Azure.Devices.Client.TransportType.Http1,
+                "Amqp_WebSocket_Only" => Microsoft.Azure.Devices.Client.TransportType.Amqp_WebSocket_Only,
+                "Mqtt_WebSocket_Only" => Microsoft.Azure.Devices.Client.TransportType.Mqtt_WebSocket_Only,
+                _ => Microsoft.Azure.Devices.Client.TransportType.Mqtt_WebSocket_Only
+            };
         }
     }
 }
