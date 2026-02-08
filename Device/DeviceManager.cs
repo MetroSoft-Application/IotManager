@@ -1,3 +1,4 @@
+﻿using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 using Microsoft.Azure.Devices;
@@ -175,8 +176,92 @@ namespace IotManager.Device
                 await OnDirectMethodReceived($"[{deviceId}][DirectMethod][{timestamp}] {payload}");
             }
 
+            // "command" メソッドの場合、ペイロードのmessageをコマンドプロンプトで実行
+            if (methodRequest.Name.Equals("command", StringComparison.OrdinalIgnoreCase))
+            {
+                try
+                {
+                    var payloadObject = JsonSerializer.Deserialize<JsonElement>(payload);
+                    if (payloadObject.TryGetProperty("message", out var messageElement))
+                    {
+                        var command = messageElement.GetString();
+                        if (!string.IsNullOrWhiteSpace(command))
+                        {
+                            var result = await ExecuteCommandAsync(command);
+
+                            // 実行結果をUIに通知
+                            if (OnDirectMethodReceived != null)
+                            {
+                                var resultTimestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
+                                await OnDirectMethodReceived($"[{deviceId}][{methodRequest.Name}][{resultTimestamp}]{result}");
+                            }
+
+                            var responseObject = new { status = "success", output = result };
+                            var responseJson = JsonSerializer.Serialize(responseObject);
+                            var commandResponseBytes = Encoding.UTF8.GetBytes(responseJson);
+                            return new MethodResponse(commandResponseBytes, 200);
+                        }
+                    }
+
+                    var errorResponse = new { status = "error", message = "Invalid payload: 'message' field not found or empty" };
+                    var errorJson = JsonSerializer.Serialize(errorResponse);
+                    return new MethodResponse(Encoding.UTF8.GetBytes(errorJson), 400);
+                }
+                catch (Exception ex)
+                {
+                    // エラーもUIに通知
+                    if (OnDirectMethodReceived != null)
+                    {
+                        var errorTimestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
+                        await OnDirectMethodReceived($"[{deviceId}][CommandError][{errorTimestamp}] {ex.Message}");
+                    }
+
+                    var errorResponse = new { status = "error", message = ex.Message };
+                    var errorJson = JsonSerializer.Serialize(errorResponse);
+                    return new MethodResponse(Encoding.UTF8.GetBytes(errorJson), 500);
+                }
+            }
+
             var responseBytes = Encoding.UTF8.GetBytes(payload);
             return new MethodResponse(responseBytes, 200);
+        }
+
+        /// <summary>
+        /// コマンドプロンプトでコマンドを実行
+        /// </summary>
+        /// <param name="command">実行するコマンド</param>
+        /// <returns>コマンドの実行結果</returns>
+        private async Task<string> ExecuteCommandAsync(string command)
+        {
+            var processStartInfo = new ProcessStartInfo
+            {
+                FileName = "cmd.exe",
+                Arguments = $"/c {command}",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using var process = new Process { StartInfo = processStartInfo };
+            process.Start();
+
+            // 標準出力とエラー出力を並列に読み取る（デッドロック防止）
+            var outputTask = process.StandardOutput.ReadToEndAsync();
+            var errorTask = process.StandardError.ReadToEndAsync();
+
+            await Task.WhenAll(outputTask, errorTask);
+            await process.WaitForExitAsync();
+
+            var output = outputTask.Result;
+            var error = errorTask.Result;
+
+            if (process.ExitCode != 0 && !string.IsNullOrWhiteSpace(error))
+            {
+                return $"Error (ExitCode: {process.ExitCode}): {error}";
+            }
+
+            return string.IsNullOrWhiteSpace(output) ? "Command executed successfully (no output)" : output;
         }
 
         /// <summary>
