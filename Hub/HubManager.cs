@@ -11,22 +11,26 @@ namespace IotManager.Hub
     /// <summary>
     /// Hub操作を管理するクラス
     /// </summary>
-    public class HubManager
+    public class HubManager : IDisposable
     {
-        private readonly EventHubSettings settings;
+        private readonly EventHubSettings eventHubSettings;
+        private readonly IoTHubSettings ioTHubSettings;
         private readonly string eventHubName;
         private EventProcessorClient processorClient;
+        private ServiceClient serviceClient;
 
         public event Func<string, Task> OnHubMessageReceived;
 
         /// <summary>
         /// コンストラクタ
         /// </summary>
-        /// <param name="settings">Event Hub設定</param>
-        public HubManager(EventHubSettings settings)
+        /// <param name="eventHubSettings">Event Hub設定</param>
+        /// <param name="ioTHubSettings">IoT Hub設定</param>
+        public HubManager(EventHubSettings eventHubSettings, IoTHubSettings ioTHubSettings)
         {
-            this.settings = settings;
-            eventHubName = Utility.GetEntityPathFromConnectionString(settings.ConnectionString);
+            this.eventHubSettings = eventHubSettings;
+            this.ioTHubSettings = ioTHubSettings;
+            eventHubName = Utility.GetEntityPathFromConnectionString(eventHubSettings.ConnectionString);
         }
 
         /// <summary>
@@ -34,12 +38,12 @@ namespace IotManager.Hub
         /// </summary>
         public async Task StartEventHubProcessingAsync()
         {
-            if (processorClient is null && !string.IsNullOrWhiteSpace(settings.ConnectionString) && !string.IsNullOrWhiteSpace(settings.StorageConnectionString))
+            if (processorClient is null && !string.IsNullOrWhiteSpace(eventHubSettings.ConnectionString) && !string.IsNullOrWhiteSpace(eventHubSettings.StorageConnectionString))
             {
-                var blobContainerClient = new BlobContainerClient(settings.StorageConnectionString, settings.StorageContainerName);
+                var blobContainerClient = new BlobContainerClient(eventHubSettings.StorageConnectionString, eventHubSettings.StorageContainerName);
                 blobContainerClient.CreateIfNotExists();
 
-                processorClient = new EventProcessorClient(blobContainerClient, EventHubConsumerClient.DefaultConsumerGroupName, settings.ConnectionString, eventHubName);
+                processorClient = new EventProcessorClient(blobContainerClient, EventHubConsumerClient.DefaultConsumerGroupName, eventHubSettings.ConnectionString, eventHubName);
 
                 processorClient.ProcessEventAsync += ProcessEventHandler;
                 processorClient.ProcessErrorAsync += ProcessErrorHandler;
@@ -66,7 +70,7 @@ namespace IotManager.Hub
         /// <param name="message">送信するメッセージ本文</param>
         public async Task SendCloudToDeviceMessageAsync(string deviceId, string message)
         {
-            var serviceClient = ServiceClient.CreateFromConnectionString(iotHubConnectionString);
+            serviceClient = ServiceClient.CreateFromConnectionString(ioTHubSettings.ConnectionString);
             var commandMessage = new Microsoft.Azure.Devices.Message(Encoding.ASCII.GetBytes(message));
             await serviceClient.SendAsync(deviceId, commandMessage);
         }
@@ -95,6 +99,15 @@ namespace IotManager.Hub
         private Task ProcessErrorHandler(ProcessErrorEventArgs eventArgs)
         {
             return Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// リソースを解放
+        /// </summary>
+        public void Dispose()
+        {
+            serviceClient?.Dispose();
+            processorClient?.StopProcessingAsync().GetAwaiter().GetResult();
         }
     }
 }

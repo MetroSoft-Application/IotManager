@@ -37,7 +37,7 @@ namespace IotManager
 
             // DeviceManagerとHubManagerを初期化（必要な設定のみを渡す）
             deviceManager = new DeviceManager(settings.IoTHub);
-            hubManager = new HubManager(settings.EventHub);
+            hubManager = new HubManager(settings.EventHub, settings.IoTHub);
 
             // イベントハンドラを登録
             deviceManager.OnMessageReceived += OnDeviceMessageReceived;
