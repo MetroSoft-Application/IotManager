@@ -5,6 +5,7 @@ using Microsoft.Azure.Devices;
 using Microsoft.Azure.Devices.Client;
 using Polly;
 using Polly.Retry;
+using IotManager.Settings;
 
 namespace IotManager.Device
 {
@@ -15,7 +16,7 @@ namespace IotManager.Device
     {
         private readonly Dictionary<string, DeviceClient> deviceClients = new Dictionary<string, DeviceClient>();
         private readonly Dictionary<string, string> currentDirectMethodNames = new Dictionary<string, string>();
-        private readonly string iotHubConnectionString;
+        private readonly IoTHubSettings settings;
         private readonly AsyncRetryPolicy retryPolicy;
         private readonly RegistryManager registryManager;
 
@@ -25,16 +26,16 @@ namespace IotManager.Device
         /// <summary>
         /// コンストラクタ
         /// </summary>
-        /// <param name="iotHubConnectionString">IoT Hub接続文字列</param>
-        public DeviceManager(string iotHubConnectionString)
+        /// <param name="settings">IoT Hub設定</param>
+        public DeviceManager(IoTHubSettings settings)
         {
-            this.iotHubConnectionString = iotHubConnectionString;
+            this.settings = settings;
 
             retryPolicy = Policy
                 .Handle<Exception>()
                 .WaitAndRetryAsync(5, retryAttempt => TimeSpan.FromSeconds(2));
 
-            registryManager = RegistryManager.CreateFromConnectionString(iotHubConnectionString);
+            registryManager = RegistryManager.CreateFromConnectionString(settings.ConnectionString);
         }
 
         /// <summary>
@@ -61,7 +62,7 @@ namespace IotManager.Device
         public async Task OpenDeviceAsync(string deviceId)
         {
             var device = await registryManager.GetDeviceAsync(deviceId);
-            var deviceConnectionString = Utility.BuildDeviceConnectionString(deviceId, device.Authentication.SymmetricKey.PrimaryKey, iotHubConnectionString);
+            var deviceConnectionString = Utility.BuildDeviceConnectionString(deviceId, device.Authentication.SymmetricKey.PrimaryKey, settings.ConnectionString);
 
             await retryPolicy.ExecuteAsync(async () =>
             {
@@ -131,10 +132,10 @@ namespace IotManager.Device
             currentDirectMethodNames[deviceId] = methodName;
 
             // ダイレクトメソッドを呼び出す
-            var methodInvocation = new CloudToDeviceMethod(methodName) { ResponseTimeout = TimeSpan.FromSeconds(30) };
+            var methodInvocation = new CloudToDeviceMethod(methodName) { ResponseTimeout = TimeSpan.FromSeconds(settings.DirectMethodTimeoutSeconds) };
             methodInvocation.SetPayloadJson(payload);
 
-            var serviceClient = ServiceClient.CreateFromConnectionString(iotHubConnectionString);
+            var serviceClient = ServiceClient.CreateFromConnectionString(settings.ConnectionString);
             return await serviceClient.InvokeDeviceMethodAsync(deviceId, methodInvocation);
         }
 

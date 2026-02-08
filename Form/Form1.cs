@@ -2,6 +2,7 @@
 using IotManager.Device;
 using IotManager.Hub;
 using IotManager.Form;
+using IotManager.Settings;
 using Microsoft.Extensions.Configuration;
 
 namespace IotManager
@@ -26,18 +27,17 @@ namespace IotManager
             InitializeComponent();
             AutoScaleMode = AutoScaleMode.Dpi;
 
-            var iotHubConnectionString = Utility.Configuration["IoTHub:ConnectionString"];
-            txtIotHubConnectionString.Text = iotHubConnectionString;
+            // 設定をバインド
+            var settings = new IoTManagerSettings();
+            Utility.Configuration.Bind(settings);
 
-            var eventHubConnectionString = Utility.Configuration["EventHub:ConnectionString"];
-            txtEventHubConnectionString.Text = eventHubConnectionString;
+            txtIotHubConnectionString.Text = settings.IoTHub.ConnectionString;
+            txtEventHubConnectionString.Text = settings.EventHub.ConnectionString;
+            txtStorageConnectionString.Text = settings.EventHub.StorageConnectionString;
 
-            var storageConnectionString = Utility.Configuration["EventHub:StorageConnectionString"];
-            txtStorageConnectionString.Text = storageConnectionString;
-
-            // DeviceManagerとHubManagerを初期化
-            deviceManager = new DeviceManager(iotHubConnectionString);
-            hubManager = new HubManager(iotHubConnectionString, eventHubConnectionString, storageConnectionString);
+            // DeviceManagerとHubManagerを初期化（必要な設定のみを渡す）
+            deviceManager = new DeviceManager(settings.IoTHub);
+            hubManager = new HubManager(settings.EventHub);
 
             // イベントハンドラを登録
             deviceManager.OnMessageReceived += OnDeviceMessageReceived;

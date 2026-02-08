@@ -4,6 +4,7 @@ using Azure.Messaging.EventHubs.Consumer;
 using Azure.Messaging.EventHubs.Processor;
 using Azure.Storage.Blobs;
 using Microsoft.Azure.Devices;
+using IotManager.Settings;
 
 namespace IotManager.Hub
 {
@@ -12,10 +13,8 @@ namespace IotManager.Hub
     /// </summary>
     public class HubManager
     {
-        private readonly string iotHubConnectionString;
-        private readonly string eventHubConnectionString;
+        private readonly EventHubSettings settings;
         private readonly string eventHubName;
-        private readonly string storageConnectionString;
         private EventProcessorClient processorClient;
 
         public event Func<string, Task> OnHubMessageReceived;
@@ -23,15 +22,11 @@ namespace IotManager.Hub
         /// <summary>
         /// コンストラクタ
         /// </summary>
-        /// <param name="iotHubConnectionString">IoT Hub接続文字列</param>
-        /// <param name="eventHubConnectionString">Event Hub接続文字列</param>
-        /// <param name="storageConnectionString">Storage接続文字列</param>
-        public HubManager(string iotHubConnectionString, string eventHubConnectionString, string storageConnectionString)
+        /// <param name="settings">Event Hub設定</param>
+        public HubManager(EventHubSettings settings)
         {
-            this.iotHubConnectionString = iotHubConnectionString;
-            this.eventHubConnectionString = eventHubConnectionString;
-            this.storageConnectionString = storageConnectionString;
-            eventHubName = Utility.GetEntityPathFromConnectionString(eventHubConnectionString);
+            this.settings = settings;
+            eventHubName = Utility.GetEntityPathFromConnectionString(settings.ConnectionString);
         }
 
         /// <summary>
@@ -39,13 +34,12 @@ namespace IotManager.Hub
         /// </summary>
         public async Task StartEventHubProcessingAsync()
         {
-            if (processorClient is null && !string.IsNullOrWhiteSpace(this.eventHubConnectionString) && !string.IsNullOrWhiteSpace(this.storageConnectionString))
+            if (processorClient is null && !string.IsNullOrWhiteSpace(settings.ConnectionString) && !string.IsNullOrWhiteSpace(settings.StorageConnectionString))
             {
-                var blobContainerName = Utility.Configuration["EventHub:StorageContainerName"] ?? "eventhub-checkpoints";
-                var blobContainerClient = new BlobContainerClient(storageConnectionString, blobContainerName);
+                var blobContainerClient = new BlobContainerClient(settings.StorageConnectionString, settings.StorageContainerName);
                 blobContainerClient.CreateIfNotExists();
 
-                processorClient = new EventProcessorClient(blobContainerClient, EventHubConsumerClient.DefaultConsumerGroupName, eventHubConnectionString, eventHubName);
+                processorClient = new EventProcessorClient(blobContainerClient, EventHubConsumerClient.DefaultConsumerGroupName, settings.ConnectionString, eventHubName);
 
                 processorClient.ProcessEventAsync += ProcessEventHandler;
                 processorClient.ProcessErrorAsync += ProcessErrorHandler;
