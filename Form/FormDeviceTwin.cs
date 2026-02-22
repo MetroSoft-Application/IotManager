@@ -26,6 +26,9 @@ namespace IotManager
 
         public FormDeviceTwin(string connectionString)
         {
+#if !NET6_0_OR_GREATER
+            Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+#endif
             InitializeComponent();
             iotHubConnectionString = connectionString;
             registryManager = RegistryManager.CreateFromConnectionString(iotHubConnectionString);

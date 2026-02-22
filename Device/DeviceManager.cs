@@ -264,7 +264,11 @@ namespace IotManager.Device
             var errorTask = process.StandardError.ReadToEndAsync();
 
             await Task.WhenAll(outputTask, errorTask);
+#if NET6_0_OR_GREATER
             await process.WaitForExitAsync();
+#else
+            await Task.Run(() => process.WaitForExit());
+#endif
 
             var output = outputTask.Result;
             var error = errorTask.Result;

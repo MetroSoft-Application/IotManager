@@ -23,6 +23,9 @@ namespace IotManager
         /// </summary>
         public Form1()
         {
+#if !NET6_0_OR_GREATER
+            Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+#endif
             InitializeComponent();
             AutoScaleMode = AutoScaleMode.Dpi;
 

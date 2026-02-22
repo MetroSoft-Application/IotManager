@@ -8,12 +8,16 @@ namespace IotManager
         [STAThread]
         static void Main()
         {
+#if NET6_0_OR_GREATER
             Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
+#endif
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             // To customize application configuration such as set high DPI settings or default font,
             // see https://aka.ms/applicationconfiguration.
+#if NET6_0_OR_GREATER
             ApplicationConfiguration.Initialize();
+#endif
             Application.Run(new Form1());
         }
     }

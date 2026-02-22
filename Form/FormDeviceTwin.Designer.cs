@@ -101,7 +101,9 @@
             txtSQL.CharHeight = 14;
             txtSQL.CharWidth = 8;
             txtSQL.Cursor = Cursors.IBeam;
+#if NET6_0_OR_GREATER
             txtSQL.DefaultMarkerSize = 8;
+#endif
             txtSQL.DisabledColor = Color.FromArgb(100, 180, 180, 180);
             txtSQL.IsReplaceMode = false;
             txtSQL.LeftBracket = '(';
@@ -169,7 +171,9 @@
             txtTwinStatus.CharHeight = 14;
             txtTwinStatus.CharWidth = 8;
             txtTwinStatus.Cursor = Cursors.IBeam;
+#if NET6_0_OR_GREATER
             txtTwinStatus.DefaultMarkerSize = 8;
+#endif
             txtTwinStatus.DisabledColor = Color.FromArgb(100, 180, 180, 180);
             txtTwinStatus.Font = new Font("Courier New", 9.75F, FontStyle.Regular, GraphicsUnit.Point);
             txtTwinStatus.IsReplaceMode = false;

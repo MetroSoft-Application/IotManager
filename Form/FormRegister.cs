@@ -11,6 +11,9 @@ namespace IotManager.Form
 
         public FormRegister(string iotHubConnectionString)
         {
+#if !NET6_0_OR_GREATER
+            Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+#endif
             InitializeComponent();
             this.iotHubConnectionString = iotHubConnectionString;
             this.registryManager = RegistryManager.CreateFromConnectionString(iotHubConnectionString);
@@ -61,7 +64,11 @@ namespace IotManager.Form
             var extension = Path.GetExtension(filePath).ToLower();
             var delimiter = extension == ".tsv" ? '\t' : ',';
 
+#if NET6_0_OR_GREATER
             var lines = await File.ReadAllLinesAsync(filePath);
+#else
+            var lines = await Task.Run(() => File.ReadAllLines(filePath));
+#endif
             if (lines.Length < 2)
             {
                 MessageBox.Show("File must contain at least a header row and one data row.", "Invalid File", MessageBoxButtons.OK, MessageBoxIcon.Warning);
