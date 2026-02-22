@@ -170,7 +170,11 @@ FROM
                 // DataGridViewにマッピング
                 if (allResults.Count > 0)
                 {
-                    MapJsonToDataTable(allResults);
+                    var hasOrderBy = Regex.IsMatch(sqlQuery, @"\bORDER\s+BY\b", RegexOptions.IgnoreCase);
+                    var displayResults = hasOrderBy
+                        ? allResults
+                        : allResults.OrderBy(j => j["deviceId"]?.ToString() ?? string.Empty).ToList();
+                    MapJsonToDataTable(displayResults);
                 }
             }
             catch (Exception ex)

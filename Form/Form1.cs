@@ -17,7 +17,6 @@ namespace IotManager
         private bool isDeviceOpen = false;
         private bool isIotHubOpen = false;
         private const int MAX_LINE = 50000;
-        private const int MAX_LINE_COMMAND_RESULT = 50000; // コマンド実行結果用の拡張行数
 
         /// <summary>
         /// コンストラクタ
@@ -35,7 +34,7 @@ namespace IotManager
             txtEventHubConnectionString.Text = settings.EventHub.ConnectionString;
             txtStorageConnectionString.Text = settings.EventHub.StorageConnectionString;
 
-            // DeviceManagerとHubManagerを初期化（必要な設定のみを渡す）
+            // DeviceManagerとHubManagerを初期化
             deviceManager = new DeviceManager(settings.IoTHub);
             hubManager = new HubManager(settings.EventHub, settings.IoTHub);
 

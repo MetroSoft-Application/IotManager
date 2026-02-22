@@ -18,6 +18,7 @@ namespace IotManager.Device
         private readonly IoTHubSettings settings;
         private readonly AsyncRetryPolicy retryPolicy;
         private readonly RegistryManager registryManager;
+        private readonly ServiceClient serviceClient;
 
         public event Func<string, Task> OnMessageReceived;
         public event Func<string, Task> OnDirectMethodReceived;
@@ -35,6 +36,7 @@ namespace IotManager.Device
                 .WaitAndRetryAsync(settings.RetryCount, retryAttempt => TimeSpan.FromSeconds(settings.RetryDelaySeconds));
 
             registryManager = RegistryManager.CreateFromConnectionString(settings.ConnectionString);
+            serviceClient = ServiceClient.CreateFromConnectionString(settings.ConnectionString);
         }
 
         /// <summary>
@@ -146,7 +148,6 @@ namespace IotManager.Device
             var methodInvocation = new CloudToDeviceMethod(methodName) { ResponseTimeout = TimeSpan.FromSeconds(settings.DirectMethodTimeoutSeconds) };
             methodInvocation.SetPayloadJson(payload);
 
-            var serviceClient = ServiceClient.CreateFromConnectionString(settings.ConnectionString);
             return await serviceClient.InvokeDeviceMethodAsync(deviceId, methodInvocation);
         }
 

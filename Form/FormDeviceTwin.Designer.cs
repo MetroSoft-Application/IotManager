@@ -97,12 +97,12 @@
             txtSQL.AutoIndentCharsPatterns = "^\\s*[\\w\\.]+(\\s\\w+)?\\s*(?<range>=)\\s*(?<range>[^;=]+);\r\n^\\s*(case|default)\\s*[^:]*(?<range>:)\\s*(?<range>[^;]+);";
             txtSQL.AutoScrollMinSize = new Size(27, 14);
             txtSQL.BackBrush = null;
+            txtSQL.BorderStyle = BorderStyle.FixedSingle;
             txtSQL.CharHeight = 14;
             txtSQL.CharWidth = 8;
             txtSQL.Cursor = Cursors.IBeam;
             txtSQL.DefaultMarkerSize = 8;
             txtSQL.DisabledColor = Color.FromArgb(100, 180, 180, 180);
-            txtSQL.Font = new Font("Courier New", 9.75F, FontStyle.Regular, GraphicsUnit.Point);
             txtSQL.IsReplaceMode = false;
             txtSQL.LeftBracket = '(';
             txtSQL.LeftBracket2 = '{';
@@ -165,11 +165,13 @@
             txtTwinStatus.AutoIndentCharsPatterns = "^\\s*[\\w\\.]+(\\s\\w+)?\\s*(?<range>=)\\s*(?<range>[^;=]+);\r\n^\\s*(case|default)\\s*[^:]*(?<range>:)\\s*(?<range>[^;]+);";
             txtTwinStatus.AutoScrollMinSize = new Size(27, 14);
             txtTwinStatus.BackBrush = null;
+            txtTwinStatus.BorderStyle = BorderStyle.FixedSingle;
             txtTwinStatus.CharHeight = 14;
             txtTwinStatus.CharWidth = 8;
             txtTwinStatus.Cursor = Cursors.IBeam;
             txtTwinStatus.DefaultMarkerSize = 8;
             txtTwinStatus.DisabledColor = Color.FromArgb(100, 180, 180, 180);
+            txtTwinStatus.Font = new Font("Courier New", 9.75F, FontStyle.Regular, GraphicsUnit.Point);
             txtTwinStatus.IsReplaceMode = false;
             txtTwinStatus.LeftBracket = '(';
             txtTwinStatus.LeftBracket2 = '{';
