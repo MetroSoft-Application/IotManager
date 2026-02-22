@@ -47,28 +47,28 @@
             ((System.ComponentModel.ISupportInitialize)dgvDeviceTwin).BeginInit();
             ((System.ComponentModel.ISupportInitialize)txtTwinStatus).BeginInit();
             SuspendLayout();
-            // 
+            //
             // splitContainer1
-            // 
+            //
             splitContainer1.Dock = DockStyle.Fill;
             splitContainer1.Location = new Point(0, 0);
             splitContainer1.Name = "splitContainer1";
             splitContainer1.Orientation = Orientation.Horizontal;
-            // 
+            //
             // splitContainer1.Panel1
-            // 
+            //
             splitContainer1.Panel1.Controls.Add(btnExec);
             splitContainer1.Panel1.Controls.Add(txtSQL);
-            // 
+            //
             // splitContainer1.Panel2
-            // 
+            //
             splitContainer1.Panel2.Controls.Add(splitContainer2);
             splitContainer1.Size = new Size(1187, 581);
             splitContainer1.SplitterDistance = 246;
             splitContainer1.TabIndex = 1;
-            // 
+            //
             // btnExec
-            // 
+            //
             btnExec.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             btnExec.Location = new Point(1123, 3);
             btnExec.Name = "btnExec";
@@ -77,9 +77,9 @@
             btnExec.Text = "Exec";
             btnExec.UseVisualStyleBackColor = true;
             btnExec.Click += Exec_Click;
-            // 
+            //
             // txtSQL
-            // 
+            //
             txtSQL.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             txtSQL.AutoCompleteBracketsList = new char[]
     {
@@ -118,26 +118,26 @@
             txtSQL.Size = new Size(1111, 224);
             txtSQL.TabIndex = 1;
             txtSQL.Zoom = 100;
-            // 
+            //
             // splitContainer2
-            // 
+            //
             splitContainer2.Dock = DockStyle.Fill;
             splitContainer2.Location = new Point(0, 0);
             splitContainer2.Name = "splitContainer2";
-            // 
+            //
             // splitContainer2.Panel1
-            // 
+            //
             splitContainer2.Panel1.Controls.Add(dgvDeviceTwin);
-            // 
+            //
             // splitContainer2.Panel2
-            // 
+            //
             splitContainer2.Panel2.Controls.Add(txtTwinStatus);
             splitContainer2.Size = new Size(1187, 331);
             splitContainer2.SplitterDistance = 624;
             splitContainer2.TabIndex = 3;
-            // 
+            //
             // dgvDeviceTwin
-            // 
+            //
             dgvDeviceTwin.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             dgvDeviceTwin.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             dgvDeviceTwin.Location = new Point(12, 0);
@@ -147,9 +147,9 @@
             dgvDeviceTwin.RowTemplate.Height = 25;
             dgvDeviceTwin.Size = new Size(605, 328);
             dgvDeviceTwin.TabIndex = 0;
-            // 
+            //
             // txtTwinStatus
-            // 
+            //
             txtTwinStatus.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             txtTwinStatus.AutoCompleteBracketsList = new char[]
     {
@@ -190,9 +190,9 @@
             txtTwinStatus.Size = new Size(547, 328);
             txtTwinStatus.TabIndex = 3;
             txtTwinStatus.Zoom = 100;
-            // 
+            //
             // FormDeviceTwin
-            // 
+            //
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1187, 581);
