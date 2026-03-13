@@ -7,6 +7,7 @@
         <UseWindowsForms>true</UseWindowsForms>
         <ImplicitUsings>enable</ImplicitUsings>
         <LangVersion>11</LangVersion>
+        <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
         <ApplicationManifest>app.manifest</ApplicationManifest>
         <ApplicationIcon>Resources\icon.ico</ApplicationIcon>
     </PropertyGroup>
