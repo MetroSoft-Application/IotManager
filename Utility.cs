@@ -5,14 +5,17 @@ using Microsoft.Extensions.Configuration;
 namespace IotManager
 {
     /// <summary>
-    /// ユーティリティクラス
+    /// 設定取得や接続文字列解析などの共通処理を提供する
     /// </summary>
     public static class Utility
     {
+        /// <summary>
+        /// アプリケーション全体で共有する構成情報
+        /// </summary>
         public static IConfiguration Configuration { get; }
 
         /// <summary>
-        /// 静的コンストラクタ
+        /// <see cref="Utility" /> クラスを初期化し設定ファイルを読み込む
         /// </summary>
         static Utility()
         {
@@ -26,10 +29,10 @@ namespace IotManager
         }
 
         /// <summary>
-        /// 接続文字列からIoT Hubのホスト名を取得
+        /// IoTHub接続文字列からホスト名を抽出する
         /// </summary>
-        /// <param name="iotHubConnectionString">IotHubの接続文字列</param>
-        /// <returns>IoT Hubのホスト名</returns>
+        /// <param name="iotHubConnectionString">解析対象のIoTHub接続文字列</param>
+        /// <returns>接続文字列に含まれるIoTHubのホスト名</returns>
         public static string GetIoTHubHostNameFromConnectionString(string iotHubConnectionString)
         {
             var parts = iotHubConnectionString.Split(';');
@@ -45,10 +48,10 @@ namespace IotManager
         }
 
         /// <summary>
-        /// 接続文字列からEntityPathを取得
+        /// EventHub接続文字列から`EntityPath`を抽出する
         /// </summary>
-        /// <param name="eventHubConnectionString">Eventhubの接続文字列</param>
-        /// <returns>EntityPath</returns>
+        /// <param name="eventHubConnectionString">解析対象のEventHub接続文字列</param>
+        /// <returns>接続文字列に含まれる `EntityPath` の値</returns>
         public static string GetEntityPathFromConnectionString(string eventHubConnectionString)
         {
             var parts = eventHubConnectionString.Split(';');
@@ -64,12 +67,12 @@ namespace IotManager
         }
 
         /// <summary>
-        /// デバイス接続文字列を構築
+        /// デバイス接続用の接続文字列を構築する
         /// </summary>
-        /// <param name="deviceId">デバイスID</param>
-        /// <param name="primaryKey">デバイスのプライマリキー</param>
-        /// <param name="iotHubconnectionstring">IotHubの接続文字列</param>
-        /// <returns>デバイス接続文字列</returns>
+        /// <param name="deviceId">対象デバイスの ID</param>
+        /// <param name="primaryKey">対象デバイスのプライマリ キー</param>
+        /// <param name="iotHubconnectionstring">IoTHub接続文字列</param>
+        /// <returns>デバイス接続に使用する接続文字列</returns>
         public static string BuildDeviceConnectionString(string deviceId, string primaryKey, string iotHubconnectionstring)
         {
             var iotHubHostName = Utility.GetIoTHubHostNameFromConnectionString(iotHubconnectionstring);
@@ -78,10 +81,10 @@ namespace IotManager
         }
 
         /// <summary>
-        /// JSON形式の文字列かどうかを検証
+        /// 指定文字列が JSON として解釈可能か判定する
         /// </summary>
-        /// <param name="strInput">検証する文字列</param>
-        /// <returns>JSON形式の場合true</returns>
+        /// <param name="strInput">検証対象の文字列</param>
+        /// <returns>有効な JSON の場合は <see langword="true" /> それ以外は <see langword="false" /></returns>
         public static bool IsValidJson(string strInput)
         {
             try

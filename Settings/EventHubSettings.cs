@@ -1,22 +1,22 @@
 namespace IotManager.Settings
 {
     /// <summary>
-    /// Event Hub設定
+    /// EventHub受信処理に関する設定
     /// </summary>
     public class EventHubSettings
     {
         /// <summary>
-        /// Event Hub接続文字列
+        /// EventHub接続文字列
         /// </summary>
         public string ConnectionString { get; set; } = string.Empty;
 
         /// <summary>
-        /// Storage接続文字列
+        /// チェックポイント保存先のStorage接続文字列
         /// </summary>
         public string StorageConnectionString { get; set; } = string.Empty;
 
         /// <summary>
-        /// Storageコンテナ名
+        /// チェックポイント保存に使用するStorageコンテナー名
         /// </summary>
         public string StorageContainerName { get; set; } = string.Empty;
     }

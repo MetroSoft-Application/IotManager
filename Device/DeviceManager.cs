@@ -10,23 +10,45 @@ using IotManager.Settings;
 namespace IotManager.Device
 {
     /// <summary>
-    /// デバイス操作を管理するクラス
+    /// デバイス接続 メッセージ送信 ダイレクトメソッド処理を管理する
     /// </summary>
     public class DeviceManager
     {
+        /// <summary>
+        /// デバイスIDごとの接続済みクライアント
+        /// </summary>
         private readonly Dictionary<string, DeviceClient> deviceClients = new Dictionary<string, DeviceClient>();
+        /// <summary>
+        /// IoTHub関連の設定
+        /// </summary>
         private readonly IoTHubSettings settings;
+        /// <summary>
+        /// 再試行ポリシー
+        /// </summary>
         private readonly AsyncRetryPolicy retryPolicy;
+        /// <summary>
+        /// デバイス情報取得に使用するレジストリマネージャー
+        /// </summary>
         private readonly RegistryManager registryManager;
+        /// <summary>
+        /// サービス側操作に使用するクライアント
+        /// </summary>
         private readonly ServiceClient serviceClient;
 
+        /// <summary>
+        /// デバイスメッセージ受信時に通知するイベント
+        /// </summary>
         public event Func<string, Task> OnMessageReceived;
+
+        /// <summary>
+        /// ダイレクトメソッド受信時に通知するイベント
+        /// </summary>
         public event Func<string, Task> OnDirectMethodReceived;
 
         /// <summary>
-        /// コンストラクタ
+        /// <see cref="DeviceManager" /> クラスの新しいインスタンスを初期化する
         /// </summary>
-        /// <param name="settings">IoT Hub設定</param>
+        /// <param name="settings">IoTHub接続およびデバイス操作に使用する設定</param>
         public DeviceManager(IoTHubSettings settings)
         {
             this.settings = settings;
@@ -40,8 +62,9 @@ namespace IotManager.Device
         }
 
         /// <summary>
-        /// デバイスIDリストを取得
+        /// IoTHubに登録されているデバイスID一覧を取得する
         /// </summary>
+        /// <returns>昇順に並べたデバイスID一覧</returns>
         public async Task<List<string>> GetDeviceIdsAsync()
         {
             var deviceIds = new List<string>();
@@ -57,9 +80,10 @@ namespace IotManager.Device
         }
 
         /// <summary>
-        /// デバイスを開く
+        /// 指定デバイスとの接続を確立し受信ハンドラーを登録する
         /// </summary>
-        /// <param name="deviceId">開くデバイスのID</param>
+        /// <param name="deviceId">接続対象のデバイスID</param>
+        /// <returns>接続完了を表すタスク</returns>
         public async Task OpenDeviceAsync(string deviceId)
         {
             var device = await registryManager.GetDeviceAsync(deviceId);
@@ -83,9 +107,10 @@ namespace IotManager.Device
         }
 
         /// <summary>
-        /// デバイスを閉じる
+        /// 指定デバイスとの接続を閉じる
         /// </summary>
-        /// <param name="deviceId">閉じるデバイスのID</param>
+        /// <param name="deviceId">切断対象のデバイスID</param>
+        /// <returns>切断完了を表すタスク</returns>
         public async Task CloseDeviceAsync(string deviceId)
         {
             if (deviceClients.TryGetValue(deviceId, out var client))
@@ -99,10 +124,11 @@ namespace IotManager.Device
         }
 
         /// <summary>
-        /// デバイスにメッセージを送信
+        /// 指定デバイスからメッセージを送信する
         /// </summary>
-        /// <param name="deviceId">対象デバイスのID</param>
+        /// <param name="deviceId">送信元となるデバイスID</param>
         /// <param name="message">送信するメッセージ本文</param>
+        /// <returns>送信完了を表すタスク</returns>
         public async Task SendDeviceMessageAsync(string deviceId, string message)
         {
             await retryPolicy.ExecuteAsync(async () =>
@@ -112,10 +138,10 @@ namespace IotManager.Device
         }
 
         /// <summary>
-        /// デバイスの接続状態を確認
+        /// デバイスの接続状態を取得する
         /// </summary>
-        /// <param name="deviceId">対象デバイスのID</param>
-        /// <returns>接続されている場合true</returns>
+        /// <param name="deviceId">状態確認対象のデバイスID</param>
+        /// <returns>接続中の場合は <see langword="true" /> それ以外は <see langword="false" /></returns>
         public async Task<bool> IsDeviceConnectedAsync(string deviceId)
         {
             try
@@ -130,11 +156,12 @@ namespace IotManager.Device
         }
 
         /// <summary>
-        /// ダイレクトメソッドを呼び出し
+        /// 指定デバイスに対してダイレクトメソッドを呼び出す
         /// </summary>
-        /// <param name="deviceId">対象デバイスのID</param>
+        /// <param name="deviceId">呼び出し対象のデバイスID</param>
         /// <param name="methodName">呼び出すメソッド名</param>
-        /// <param name="payload">メソッドに渡すJSON形式のペイロード</param>
+        /// <param name="payload">メソッドに渡す JSON 形式のペイロード</param>
+        /// <returns>ダイレクトメソッド呼び出し結果</returns>
         public async Task<CloudToDeviceMethodResult> InvokeDirectMethodAsync(string deviceId, string methodName, string payload)
         {
             // デバイスの接続状態を事前確認（注意: 完全にリアルタイムではない）
@@ -152,11 +179,12 @@ namespace IotManager.Device
         }
 
         /// <summary>
-        /// デバイスからのメッセージを受信したときの処理
+        /// デバイスからのメッセージ受信時にイベント通知と完了応答を行う
         /// </summary>
-        /// <param name="deviceId">デバイスID</param>
+        /// <param name="deviceId">受信元デバイスID</param>
         /// <param name="receivedMessage">受信したメッセージ</param>
-        /// <param name="userContext">ユーザーコンテキスト</param>
+        /// <param name="userContext">登録時に渡されたユーザーコンテキスト</param>
+        /// <returns>受信処理完了を表すタスク</returns>
         private async Task OnDeviceMessageReceived(string deviceId, Microsoft.Azure.Devices.Client.Message receivedMessage, object userContext)
         {
             var messageText = Encoding.UTF8.GetString(receivedMessage.GetBytes());
@@ -174,11 +202,12 @@ namespace IotManager.Device
         }
 
         /// <summary>
-        /// ダイレクトメソッドのコールバック処理
+        /// ダイレクトメソッド受信時の既定処理を実行する
         /// </summary>
-        /// <param name="deviceId">デバイスID</param>
-        /// <param name="methodRequest">メソッドリクエスト</param>
-        /// <param name="userContext">ユーザーコンテキスト</param>
+        /// <param name="deviceId">呼び出し対象デバイスID</param>
+        /// <param name="methodRequest">受信したメソッド要求</param>
+        /// <param name="userContext">登録時に渡されたユーザーコンテキスト</param>
+        /// <returns>デバイスから返却するメソッド応答</returns>
         private async Task<MethodResponse> DeviceMethodCallback(string deviceId, MethodRequest methodRequest, object userContext)
         {
             var payload = methodRequest.DataAsJson;
@@ -240,10 +269,10 @@ namespace IotManager.Device
         }
 
         /// <summary>
-        /// コマンドプロンプトでコマンドを実行
+        /// コマンドプロンプトを利用して指定コマンドを実行する
         /// </summary>
-        /// <param name="command">実行するコマンド</param>
-        /// <returns>コマンドの実行結果</returns>
+        /// <param name="command">実行するコマンド文字列</param>
+        /// <returns>標準出力またはエラーを含む実行結果文字列</returns>
         private async Task<string> ExecuteCommandAsync(string command)
         {
             var processStartInfo = new ProcessStartInfo
@@ -282,10 +311,11 @@ namespace IotManager.Device
         }
 
         /// <summary>
-        /// メッセージを送信する
+        /// 実際のデバイス送信処理を実行する
         /// </summary>
-        /// <param name="deviceId">デバイスID</param>
-        /// <param name="message">送信するメッセージ</param>
+        /// <param name="deviceId">送信対象のデバイスID</param>
+        /// <param name="message">送信するメッセージ本文</param>
+        /// <returns>送信完了を表すタスク</returns>
         private async Task SendMessageAsync(string deviceId, string message)
         {
             if (!deviceClients.TryGetValue(deviceId, out var client))
@@ -308,10 +338,10 @@ namespace IotManager.Device
         }
 
         /// <summary>
-        /// 文字列からTransportTypeを解析
+        /// 設定文字列からトランスポート種別を解決する
         /// </summary>
-        /// <param name="transportType">トランスポートタイプ文字列</param>
-        /// <returns>TransportType列挙型</returns>
+        /// <param name="transportType">設定ファイルから読み込んだトランスポート種別文字列</param>
+        /// <returns>対応する <see cref="Microsoft.Azure.Devices.Client.TransportType" /></returns>
         private Microsoft.Azure.Devices.Client.TransportType ParseTransportType(string transportType)
         {
             return transportType switch

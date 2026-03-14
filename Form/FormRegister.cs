@@ -3,12 +3,28 @@ using Microsoft.Azure.Devices;
 
 namespace IotManager.Form
 {
+    /// <summary>
+    /// CSVまたはTSVからデバイスを一括登録する画面
+    /// </summary>
     public partial class FormRegister : System.Windows.Forms.Form
     {
+        /// <summary>
+        /// IoTHub接続文字列
+        /// </summary>
         private readonly string iotHubConnectionString;
+        /// <summary>
+        /// デバイス登録に使用するレジストリマネージャー
+        /// </summary>
         private RegistryManager registryManager;
+        /// <summary>
+        /// 画面表示用のデバイス一覧テーブル
+        /// </summary>
         private DataTable deviceTable;
 
+        /// <summary>
+        /// <see cref="FormRegister" /> クラスの新しいインスタンスを初期化する
+        /// </summary>
+        /// <param name="iotHubConnectionString">デバイス登録に使用するIoTHub接続文字列</param>
         public FormRegister(string iotHubConnectionString)
         {
 #if !NET6_0_OR_GREATER
@@ -16,12 +32,25 @@ namespace IotManager.Form
 #endif
             InitializeComponent();
             this.iotHubConnectionString = iotHubConnectionString;
-            this.registryManager = RegistryManager.CreateFromConnectionString(iotHubConnectionString);
 
             InitializeDataTable();
             InitializeEventHandlers();
         }
 
+        /// <summary>
+        /// 必要に応じて <see cref="RegistryManager" /> を初期化する
+        /// </summary>
+        private void EnsureRegistryManager()
+        {
+            if (registryManager == null)
+            {
+                registryManager = RegistryManager.CreateFromConnectionString(iotHubConnectionString);
+            }
+        }
+
+        /// <summary>
+        /// 一覧表示に使用する <see cref="DataTable" /> を初期化する
+        /// </summary>
         private void InitializeDataTable()
         {
             deviceTable = new DataTable();
@@ -29,12 +58,20 @@ namespace IotManager.Form
             dataGridView1.DataSource = deviceTable;
         }
 
+        /// <summary>
+        /// 画面上のイベント ハンドラーを関連付ける
+        /// </summary>
         private void InitializeEventHandlers()
         {
             btnLoad.Click += BtnLoad_Click;
             btnExec.Click += BtnExec_Click;
         }
 
+        /// <summary>
+        /// デバイス一覧ファイルを選択して読み込む
+        /// </summary>
+        /// <param name="sender">イベント送信元のコントロール</param>
+        /// <param name="e">イベントデータ</param>
         private async void BtnLoad_Click(object sender, EventArgs e)
         {
             using (var openFileDialog = new OpenFileDialog())
@@ -56,6 +93,11 @@ namespace IotManager.Form
             }
         }
 
+        /// <summary>
+        /// 指定ファイルからデバイス一覧を読み込み表形式へ反映する
+        /// </summary>
+        /// <param name="filePath">読み込むCSVまたはTSVファイルのパス</param>
+        /// <returns>ファイル読み込み処理を表すタスク</returns>
         private async Task LoadDeviceFileAsync(string filePath)
         {
             deviceTable.Clear();
@@ -137,8 +179,22 @@ namespace IotManager.Form
             MessageBox.Show($"Loaded {deviceTable.Rows.Count} devices.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
+        /// <summary>
+        /// 選択されたデバイスをIoTHubへ一括登録する
+        /// </summary>
+        /// <param name="sender">イベント送信元のコントロール</param>
+        /// <param name="e">イベントデータ</param>
         private async void BtnExec_Click(object sender, EventArgs e)
         {
+            try
+            {
+                EnsureRegistryManager();
+            }
+            catch (Exception ex)
+            {
+                return;
+            }
+
             var selectedRows = deviceTable.AsEnumerable().Where(row => row.Field<bool>("Selected")).ToList();
 
             if (selectedRows.Count == 0)
@@ -193,6 +249,10 @@ namespace IotManager.Form
             }
         }
 
+        /// <summary>
+        /// 管理中のコンポーネントおよびIoTHub接続リソースを解放する
+        /// </summary>
+        /// <param name="disposing">マネージドリソースも解放する場合は <see langword="true" /></param>
         protected override void Dispose(bool disposing)
         {
             if (disposing)

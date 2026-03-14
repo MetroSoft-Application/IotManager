@@ -9,23 +9,41 @@ using IotManager.Settings;
 namespace IotManager.Hub
 {
     /// <summary>
-    /// Hub操作を管理するクラス
+    /// EventHub受信処理とクラウド発デバイスメッセージ送信を管理する
     /// </summary>
     public class HubManager : IDisposable
     {
+        /// <summary>
+        /// EventHub関連の設定
+        /// </summary>
         private readonly EventHubSettings eventHubSettings;
+        /// <summary>
+        /// IoTHub関連の設定
+        /// </summary>
         private readonly IoTHubSettings ioTHubSettings;
+        /// <summary>
+        /// EventHub名
+        /// </summary>
         private readonly string eventHubName;
+        /// <summary>
+        /// EventHub受信プロセッサー
+        /// </summary>
         private EventProcessorClient processorClient;
+        /// <summary>
+        /// クラウド発デバイスメッセージ送信用クライアント
+        /// </summary>
         private ServiceClient serviceClient;
 
+        /// <summary>
+        /// Hubメッセージ受信時に通知するイベント
+        /// </summary>
         public event Func<string, Task> OnHubMessageReceived;
 
         /// <summary>
-        /// コンストラクタ
+        /// <see cref="HubManager" /> クラスの新しいインスタンスを初期化する
         /// </summary>
-        /// <param name="eventHubSettings">Event Hub設定</param>
-        /// <param name="ioTHubSettings">IoT Hub設定</param>
+        /// <param name="eventHubSettings">EventHub受信に使用する設定</param>
+        /// <param name="ioTHubSettings">IoTHub送信に使用する設定</param>
         public HubManager(EventHubSettings eventHubSettings, IoTHubSettings ioTHubSettings)
         {
             this.eventHubSettings = eventHubSettings;
@@ -34,8 +52,9 @@ namespace IotManager.Hub
         }
 
         /// <summary>
-        /// Event Hub処理を開始
+        /// EventHubの受信処理を開始する
         /// </summary>
+        /// <returns>開始処理完了を表すタスク</returns>
         public async Task StartEventHubProcessingAsync()
         {
             if (processorClient is null && !string.IsNullOrWhiteSpace(eventHubSettings.ConnectionString) && !string.IsNullOrWhiteSpace(eventHubSettings.StorageConnectionString))
@@ -53,8 +72,9 @@ namespace IotManager.Hub
         }
 
         /// <summary>
-        /// Event Hub処理を停止
+        /// EventHubの受信処理を停止する
         /// </summary>
+        /// <returns>停止処理完了を表すタスク</returns>
         public async Task StopEventHubProcessingAsync()
         {
             if (processorClient != null)
@@ -64,10 +84,11 @@ namespace IotManager.Hub
         }
 
         /// <summary>
-        /// クラウドからデバイスにメッセージを送信
+        /// クラウドから指定デバイスへメッセージを送信する
         /// </summary>
-        /// <param name="deviceId">メッセージ送信先のデバイス ID</param>
+        /// <param name="deviceId">メッセージ送信先のデバイスID</param>
         /// <param name="message">送信するメッセージ本文</param>
+        /// <returns>送信完了を表すタスク</returns>
         public async Task SendCloudToDeviceMessageAsync(string deviceId, string message)
         {
             serviceClient = ServiceClient.CreateFromConnectionString(ioTHubSettings.ConnectionString);
@@ -76,9 +97,10 @@ namespace IotManager.Hub
         }
 
         /// <summary>
-        /// Event を受信した時のハンドラ
+        /// EventHubからイベントを受信した際の処理を実行する
         /// </summary>
-        /// <param name="eventArgs">処理中のイベント情報</param>
+        /// <param name="eventArgs">受信イベントに関する情報</param>
+        /// <returns>イベント処理完了を表すタスク</returns>
         private async Task ProcessEventHandler(ProcessEventArgs eventArgs)
         {
             var message = Encoding.UTF8.GetString(eventArgs.Data.Body.ToArray());
@@ -93,16 +115,17 @@ namespace IotManager.Hub
         }
 
         /// <summary>
-        /// エラー発生時のハンドラ
+        /// EventHub処理中のエラー通知を受け取る
         /// </summary>
         /// <param name="eventArgs">エラー発生時のイベント情報</param>
+        /// <returns>完了済みタスク</returns>
         private Task ProcessErrorHandler(ProcessErrorEventArgs eventArgs)
         {
             return Task.CompletedTask;
         }
 
         /// <summary>
-        /// リソースを解放
+        /// 管理中の通信リソースを解放する
         /// </summary>
         public void Dispose()
         {

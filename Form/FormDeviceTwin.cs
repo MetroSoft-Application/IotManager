@@ -7,23 +7,60 @@ using System.Data;
 
 namespace IotManager
 {
+    /// <summary>
+    /// DeviceTwinをクエリし結果を一覧表示する画面
+    /// </summary>
     public partial class FormDeviceTwin : System.Windows.Forms.Form
     {
+        /// <summary>
+        /// IoTHub接続文字列
+        /// </summary>
         private readonly string iotHubConnectionString;
+        /// <summary>
+        /// DeviceTwinクエリに使用するレジストリマネージャー
+        /// </summary>
         private RegistryManager registryManager;
+        /// <summary>
+        /// 一覧表示用のTwinデータテーブル
+        /// </summary>
         private DataTable twinDataTable;
 
         // JSONシンタックスハイライト用のスタイル
+        /// <summary>
+        /// JSONキー記号表示用スタイル
+        /// </summary>
         private TextStyle keywordStyle = new TextStyle(Brushes.Blue, null, FontStyle.Regular);
+        /// <summary>
+        /// JSON文字列表示用スタイル
+        /// </summary>
         private TextStyle stringStyle = new TextStyle(Brushes.Brown, null, FontStyle.Regular);
+        /// <summary>
+        /// JSON数値表示用スタイル
+        /// </summary>
         private TextStyle numberStyle = new TextStyle(Brushes.Red, null, FontStyle.Regular);
+        /// <summary>
+        /// JSON真偽値表示用スタイル
+        /// </summary>
         private TextStyle booleanStyle = new TextStyle(Brushes.DarkCyan, null, FontStyle.Bold);
 
         // SQLシンタックスハイライト用のスタイル
+        /// <summary>
+        /// SQL文字列表示用スタイル
+        /// </summary>
         private TextStyle sqlStringStyle = new TextStyle(Brushes.Red, null, FontStyle.Regular);
+        /// <summary>
+        /// SQLキーワード表示用スタイル
+        /// </summary>
         private TextStyle sqlFunctionStyle = new TextStyle(Brushes.Magenta, null, FontStyle.Regular);
+        /// <summary>
+        /// SQLコメント表示用スタイル
+        /// </summary>
         private TextStyle sqlCommentStyle = new TextStyle(Brushes.Green, null, FontStyle.Italic);
 
+        /// <summary>
+        /// <see cref="FormDeviceTwin" /> クラスの新しいインスタンスを初期化する
+        /// </summary>
+        /// <param name="connectionString">DeviceTwinクエリに使用するIoTHub接続文字列</param>
         public FormDeviceTwin(string connectionString)
         {
 #if !NET6_0_OR_GREATER
@@ -31,7 +68,6 @@ namespace IotManager
 #endif
             InitializeComponent();
             iotHubConnectionString = connectionString;
-            registryManager = RegistryManager.CreateFromConnectionString(iotHubConnectionString);
             txtSQL.Language = Language.SQL;
 
             // DataTableの初期化
@@ -64,6 +100,22 @@ FROM
             txtSQL.TextChanged += TxtSQL_TextChanged;
         }
 
+        /// <summary>
+        /// 必要に応じて <see cref="RegistryManager" /> を初期化する
+        /// </summary>
+        private void EnsureRegistryManager()
+        {
+            if (registryManager == null)
+            {
+                registryManager = RegistryManager.CreateFromConnectionString(iotHubConnectionString);
+            }
+        }
+
+        /// <summary>
+        /// SQL入力欄に簡易シンタックスハイライトを適用する
+        /// </summary>
+        /// <param name="sender">イベント送信元のコントロール</param>
+        /// <param name="e">変更範囲を含むイベントデータ</param>
         private void TxtSQL_TextChanged(object sender, TextChangedEventArgs e)
         {
             // SQLシンタックスハイライトを適用
@@ -79,6 +131,11 @@ FROM
             e.ChangedRange.SetStyle(sqlFunctionStyle, @"\b(devices|deviceId|properties|tags|reported|desired|connectionState|status|lastActivityTime)\b", RegexOptions.IgnoreCase);
         }
 
+        /// <summary>
+        /// Twin表示欄にJSON用のシンタックスハイライトを適用する
+        /// </summary>
+        /// <param name="sender">イベント送信元のコントロール</param>
+        /// <param name="e">変更範囲を含むイベントデータ</param>
         private void TxtTwinStatus_TextChanged(object sender, TextChangedEventArgs e)
         {
             // JSONシンタックスハイライトを適用
@@ -98,10 +155,10 @@ FROM
         }
 
         /// <summary>
-        /// SQLクエリから--以降のコメントを除去
+        /// SQLクエリ文字列から行末コメントを除去する
         /// </summary>
-        /// <param name="sqlQuery">元のSQLクエリ</param>
-        /// <returns>コメントを除去したSQLクエリ</returns>
+        /// <param name="sqlQuery">元のSQLクエリ文字列</param>
+        /// <returns>コメント除去後のSQLクエリ文字列</returns>
         private string RemoveComments(string sqlQuery)
         {
             var lines = sqlQuery.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
@@ -133,10 +190,16 @@ FROM
             return string.Join(" ", processedLines);
         }
 
+        /// <summary>
+        /// 入力されたクエリを実行しTwin結果を一覧とJSON表示へ反映する
+        /// </summary>
+        /// <param name="sender">イベント送信元のコントロール</param>
+        /// <param name="e">イベントデータ</param>
         private async void Exec_Click(object sender, EventArgs e)
         {
             try
             {
+                EnsureRegistryManager();
                 txtTwinStatus.Clear();
                 twinDataTable.Clear();
                 twinDataTable.Columns.Clear();
@@ -151,7 +214,7 @@ FROM
                 // コメント行を除去(--以降をコメントとして処理)
                 sqlQuery = RemoveComments(sqlQuery);
 
-                // Device Twin クエリを実行
+                // DeviceTwinクエリを実行
                 var query = registryManager.CreateQuery(sqlQuery);
                 var allResults = new List<JObject>();
 
@@ -188,8 +251,9 @@ FROM
         }
 
         /// <summary>
-        /// JSON結果をDataTableに自動マッピング
+        /// JSON結果一覧を <see cref="DataTable" /> へ自動マッピングする
         /// </summary>
+        /// <param name="jsonObjects">表示対象のJSONオブジェクト一覧</param>
         private void MapJsonToDataTable(List<JObject> jsonObjects)
         {
             if (jsonObjects == null || jsonObjects.Count == 0)
@@ -272,8 +336,11 @@ FROM
         }
 
         /// <summary>
-        /// JSONをフラット化してプロパティ名を収集
+        /// JSONオブジェクトから表示用プロパティ名を収集する
         /// </summary>
+        /// <param name="token">解析対象のJSONトークン</param>
+        /// <param name="prefix">ネスト表現に使用する接頭辞</param>
+        /// <param name="properties">収集先のプロパティ名セット</param>
         private void FlattenJson(JToken token, string prefix, HashSet<string> properties)
         {
             if (token is JObject jObject)
@@ -296,8 +363,11 @@ FROM
         }
 
         /// <summary>
-        /// JSONをフラット化して辞書に格納
+        /// JSONオブジェクトをフラットなキーと値の辞書へ変換する
         /// </summary>
+        /// <param name="token">解析対象のJSONトークン</param>
+        /// <param name="prefix">ネスト表現に使用する接頭辞</param>
+        /// <param name="result">変換結果の格納先辞書</param>
         private void FlattenJsonToDict(JToken token, string prefix, Dictionary<string, string> result)
         {
             if (token is JObject jObject)
@@ -323,6 +393,11 @@ FROM
             }
         }
 
+        /// <summary>
+        /// フォーム終了時に使用中の接続リソースを解放する
+        /// </summary>
+        /// <param name="sender">イベント送信元のフォーム</param>
+        /// <param name="e">フォームクローズイベントデータ</param>
         private void FormDeviceTwin_FormClosing(object sender, FormClosingEventArgs e)
         {
             registryManager?.Dispose();
