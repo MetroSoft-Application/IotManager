@@ -164,13 +164,6 @@ namespace IotManager.Device
         /// <returns>ダイレクトメソッド呼び出し結果</returns>
         public async Task<CloudToDeviceMethodResult> InvokeDirectMethodAsync(string deviceId, string methodName, string payload)
         {
-            // デバイスの接続状態を事前確認（注意: 完全にリアルタイムではない）
-            var isConnected = await IsDeviceConnectedAsync(deviceId);
-            if (!isConnected)
-            {
-                throw new InvalidOperationException($"Device {deviceId} is not connected to IoT Hub.");
-            }
-
             // ダイレクトメソッドを呼び出す
             var methodInvocation = new CloudToDeviceMethod(methodName) { ResponseTimeout = TimeSpan.FromSeconds(settings.DirectMethodTimeoutSeconds) };
             methodInvocation.SetPayloadJson(payload);
@@ -192,7 +185,7 @@ namespace IotManager.Device
 
             if (OnMessageReceived != null)
             {
-                await OnMessageReceived($"[{deviceId}][Message][{timestamp}] {messageText}");
+                await OnMessageReceived($"[{deviceId}][Message][{timestamp}]\r\n{messageText}");
             }
 
             if (deviceClients.TryGetValue(deviceId, out var client))
@@ -215,7 +208,7 @@ namespace IotManager.Device
 
             if (OnDirectMethodReceived != null)
             {
-                await OnDirectMethodReceived($"[{deviceId}][DirectMethod][{timestamp}] {payload}");
+                await OnDirectMethodReceived($"[{deviceId}][DirectMethod][{timestamp}]\r\n{payload}");
             }
 
             // "command" メソッドの場合、ペイロードのmessageをコマンドプロンプトで実行
@@ -235,7 +228,7 @@ namespace IotManager.Device
                             if (OnDirectMethodReceived != null)
                             {
                                 var resultTimestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
-                                await OnDirectMethodReceived($"[{deviceId}][{methodRequest.Name}][{resultTimestamp}]{result}");
+                                await OnDirectMethodReceived($"[{deviceId}][{methodRequest.Name}][{resultTimestamp}]\r\n{result}");
                             }
 
                             var responseObject = new { status = "success", output = result };
@@ -255,7 +248,7 @@ namespace IotManager.Device
                     if (OnDirectMethodReceived != null)
                     {
                         var errorTimestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
-                        await OnDirectMethodReceived($"[{deviceId}][CommandError][{errorTimestamp}] {ex.Message}");
+                        await OnDirectMethodReceived($"[{deviceId}][CommandError][{errorTimestamp}]\r\n{ex.Message}");
                     }
 
                     var errorResponse = new { status = "error", message = ex.Message };

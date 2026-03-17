@@ -108,7 +108,7 @@ namespace IotManager.Hub
 
             if (OnHubMessageReceived != null)
             {
-                await OnHubMessageReceived($"[Message][{timestamp}] {message}");
+                await OnHubMessageReceived($"[Message][{timestamp}]\r\n{message}");
             }
 
             await eventArgs.UpdateCheckpointAsync();

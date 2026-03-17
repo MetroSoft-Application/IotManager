@@ -112,6 +112,9 @@ namespace IotManager
             btnHubSend.Enabled = false;
             btnDirectMethod.Enabled = false;
             btnDeviceTwin.Enabled = false;
+            txtIotHubConnectionString.ReadOnly = false;
+            txtEventHubConnectionString.ReadOnly = false;
+            txtStorageConnectionString.ReadOnly = false;
         }
 
         /// <summary>
@@ -406,6 +409,9 @@ namespace IotManager
                     btnDirectMethod.Enabled = false;
                     btnDeviceTwin.Enabled = false;
                     isIotHubOpen = false;
+                    txtIotHubConnectionString.ReadOnly = false;
+                    txtEventHubConnectionString.ReadOnly = false;
+                    txtStorageConnectionString.ReadOnly = false;
                     return;
                 }
 
@@ -416,6 +422,9 @@ namespace IotManager
                 btnHubSend.Enabled = true;
                 btnDirectMethod.Enabled = true;
                 btnDeviceTwin.Enabled = true;
+                txtIotHubConnectionString.ReadOnly = true;
+                txtEventHubConnectionString.ReadOnly = true;
+                txtStorageConnectionString.ReadOnly = true;
             }
             catch (Exception ex)
             {
@@ -667,7 +676,8 @@ namespace IotManager
             try
             {
                 // FormDeviceTwinを表示
-                var formDeviceTwin = new FormDeviceTwin(txtIotHubConnectionString.Text);
+                var selectedDeviceId = cmbDeviceId.SelectedItem?.ToString();
+                var formDeviceTwin = new FormDeviceTwin(txtIotHubConnectionString.Text, selectedDeviceId);
                 formDeviceTwin.Show();
             }
             catch (Exception ex)

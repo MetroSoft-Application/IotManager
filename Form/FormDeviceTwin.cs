@@ -61,7 +61,8 @@ namespace IotManager
         /// <see cref="FormDeviceTwin" /> クラスの新しいインスタンスを初期化する
         /// </summary>
         /// <param name="connectionString">DeviceTwinクエリに使用するIoTHub接続文字列</param>
-        public FormDeviceTwin(string connectionString)
+        /// <param name="deviceId">WHEREに初期設定するデバイスID。省略可能</param>
+        public FormDeviceTwin(string connectionString, string deviceId = null)
         {
 #if !NET6_0_OR_GREATER
             Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
@@ -75,8 +76,12 @@ namespace IotManager
             dgvDeviceTwin.DataSource = twinDataTable;
 
             // デフォルトのSQLクエリを設定
+            var whereClause = string.IsNullOrWhiteSpace(deviceId)
+                ? "--WHERE\r\n    --devices.deviceId = ''"
+                : $"WHERE\r\n    devices.deviceId = '{deviceId}'";
+
             txtSQL.Text =
-@"SELECT
+$@"SELECT
     deviceId
     , status
     , statusUpdateTime
@@ -89,8 +94,7 @@ namespace IotManager
     , properties.reported
 FROM
     devices
---WHERE
-    --devices.deviceId = ''
+{whereClause}
 ";
 
             // JSONシンタックスハイライトのイベントハンドラを設定
